@@ -1,0 +1,13 @@
+[project]
+name = "expense-ai"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.127.0",
+    "fastmcp>=2.14.1",
+    "pdfplumber>=0.11.8",
+    "python-multipart>=0.0.21",
+    "uvicorn>=0.40.0",
+]
