@@ -32,6 +32,7 @@ def process_statement_async(statement_id: int, pdf_path: Path):
         # save_transactions(statement_id, transactions)
 
         update_statement_status(statement_id, "completed")
+        print(f" Statement {statement_id} processing completed:")
 
     except Exception as e:
         update_statement_status(statement_id, "failed")

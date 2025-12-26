@@ -21,6 +21,8 @@ vendor_cache.db
 # Statement files / uploads
 data/*.pdf
 data/*.csv
+data/uploads/
+data/statements/
 
 # IDE / editor settings
 .vscode/
@@ -37,3 +39,4 @@ Thumbs.db
 
 # Python version manager
 .python-version
+
