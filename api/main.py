@@ -5,8 +5,8 @@ from api.db.db import init_db
 from api.tool.logging_config import logger
 
 # Routers (empty for now, will be added later)
-from api.handler.statements import router as statements_router
-# from api.handler.transactions import router as transactions_router
+from api.handler.statement import router as statements_router
+# from api.handler.transaction import router as transactions_router
 # from api.handler.dashboard import router as dashboard_router
 
 
