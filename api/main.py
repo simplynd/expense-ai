@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
 from api.db.db import init_db
+from api.tool.logging_config import logger
 
 # Routers (empty for now, will be added later)
 from api.handler.statements import router as statements_router
@@ -16,12 +17,12 @@ async def lifespan(app: FastAPI):
     """
     # Startup
     init_db()
-    print("✅ Database initialized")
+    logger.info("✅ Database initialized")
 
     yield
 
     # Shutdown
-    print("🛑 FastAPI shutting down")
+    logger.info("🛑 FastAPI shutting down")
 
 
 def create_app() -> FastAPI:

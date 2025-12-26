@@ -9,6 +9,7 @@ from api.db.db import (
 )
 from api.tool.pdf import extract_text_from_pdf
 from api.tool.transactions import parse_text_to_transactions
+from api.tool.logging_config import logger
 
 router = APIRouter()
 
@@ -32,11 +33,11 @@ def process_statement_async(statement_id: int, pdf_path: Path):
         # save_transactions(statement_id, transactions)
 
         update_statement_status(statement_id, "completed")
-        print(f" Statement {statement_id} processing completed:")
+        logger.info(f" Statement {statement_id} processing completed:")
 
     except Exception as e:
         update_statement_status(statement_id, "failed")
-        print(f"❌ Statement {statement_id} failed:", e)
+        logger.info(f"❌ Statement {statement_id} failed:", e)
 
     finally:
         # Cleanup uploaded file
