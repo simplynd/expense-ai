@@ -1,6 +1,6 @@
 import re
 import subprocess
-from api.db.db import get_connection
+from db.db import get_connection
 
 MODEL_NAME = "mistral-small3.2:latest"
 

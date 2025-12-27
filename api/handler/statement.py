@@ -5,16 +5,16 @@ import uuid
 from typing import List, Optional
 
 from pydantic import BaseModel
-from api.db.db import (
+from db.db import (
     create_statement,
     update_statement_status,
     get_statements,
     get_transactions_for_statement,
     insert_transactions,
 )
-from api.tool.pdf import extract_text_from_pdf
-from api.tool.transactions import parse_text_to_transactions
-from api.tool.logging_config import logger
+from tool.pdf import extract_text_from_pdf
+from tool.transactions import parse_text_to_transactions
+from tool.logging_config import logger
 
 router = APIRouter()
 

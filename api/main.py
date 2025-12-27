@@ -1,11 +1,11 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
-from api.db.db import init_db
-from api.tool.logging_config import logger
+from db.db import init_db
+from tool.logging_config import logger
 
 # Routers (empty for now, will be added later)
-from api.handler.statement import router as statements_router
+from handler.statement import router as statements_router
 # from api.handler.transaction import router as transactions_router
 # from api.handler.dashboard import router as dashboard_router
 

@@ -4,9 +4,9 @@ import subprocess
 from typing import List, Dict, Optional
 from datetime import datetime
 
-from api.tool.vendor import normalize_vendor
-from api.db.db import get_connection
-from api.tool.logging_config import logger
+from tool.vendor import normalize_vendor
+from db.db import get_connection
+from tool.logging_config import logger
 
 MODEL_NAME = "mistral-small3.2:latest"
 

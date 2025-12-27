@@ -23,6 +23,11 @@ data/uploads/
 data/*.pdf
 data/*.txt
 
+api/data/
+api/data/uploads/
+api/data/*.pdf
+api/data/*.txt
+
 ####################################
 # Node / UI (Vite + React)
 ####################################
