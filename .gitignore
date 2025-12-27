@@ -1,42 +1,66 @@
-# Python virtual environment
-.venv/
-env/
-venv/
-
-# Byte-compiled / cache files
+####################################
+# Python
+####################################
 __pycache__/
 *.py[cod]
-*$py.class
+*.pyo
+*.pyd
+*.egg-info/
+.env
+.venv/
+venv/
+ENV/
+.env.*
 
-# Lock files
-uv.lock
-poetry.lock
-Pipfile.lock
-
-# SQLite / DB files
+####################################
+# SQLite / App Data
+####################################
 *.db
-expense_ai.db
-vendor_cache.db
-
-# Statement files / uploads
-data/*.pdf
-data/*.csv
+*.sqlite
+*.sqlite3
+data/
 data/uploads/
-data/statements/
+data/*.pdf
+data/*.txt
 
-# IDE / editor settings
-.vscode/
-.idea/
-*.sublime-project
-*.sublime-workspace
+####################################
+# Node / UI (Vite + React)
+####################################
+ui/node_modules/
+ui/dist/
+ui/.env
+ui/.env.local
+ui/.env.development
+ui/.env.production
+ui/npm-debug.log*
+ui/yarn-debug.log*
+ui/yarn-error.log*
 
-# OS generated files
+####################################
+# Build / Cache
+####################################
+*.log
+*.tmp
+.cache/
+.eslintcache
+.vite/
+
+####################################
+# OS
+####################################
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
+####################################
+# IDEs / Editors
+####################################
+.vscode/
+.idea/
+*.swp
+*.swo
 
-# Python version manager
+####################################
+# UV / Tooling
+####################################
+uv.lock
 .python-version
-
