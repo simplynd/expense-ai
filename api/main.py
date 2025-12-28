@@ -1,13 +1,14 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 
 from db.db import init_db
 from tool.logging_config import logger
 
-# Routers (empty for now, will be added later)
+# Routers
 from handler.statement import router as statements_router
-# from api.handler.transaction import router as transactions_router
-# from api.handler.dashboard import router as dashboard_router
+from handler.transaction import router as transactions_router
+from handler.dashboard import router as dashboard_router
 
 
 @asynccontextmanager
@@ -33,10 +34,19 @@ def create_app() -> FastAPI:
         lifespan=lifespan
     )
 
-    # Routers will be plugged in here
+    # ✅ CORS (added — nothing else changed)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],          # tighten later if needed
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # Routers
     app.include_router(statements_router, prefix="/statements", tags=["Statements"])
-    # app.include_router(transactions_router, prefix="/transactions", tags=["Transactions"])
-    # app.include_router(dashboard_router, prefix="/dashboard", tags=["Dashboard"])
+    app.include_router(transactions_router, prefix="/transactions", tags=["Transactions"])
+    app.include_router(dashboard_router, prefix="/dashboard", tags=["Dashboard"])
 
     return app
 

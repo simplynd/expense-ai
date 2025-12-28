@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from typing import List, Optional
 from pydantic import BaseModel
 
-from api.db.db import (
+from db.db import (
     get_transactions_for_statement,
     assign_category_to_transactions,
     get_categories,

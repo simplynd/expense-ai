@@ -4,7 +4,7 @@ from typing import List, Dict, Optional
 from datetime import datetime
 from collections import defaultdict
 
-from api.db.db import get_transactions_for_statement, get_statements
+from db.db import get_transactions_for_statement, get_statements
 
 router = APIRouter()
 
@@ -38,7 +38,7 @@ class TransactionResponse(BaseModel):
 # Endpoints
 # =========================
 
-@router.get("/dashboard/summary", response_model=DashboardSummaryResponse)
+@router.get("/summary", response_model=DashboardSummaryResponse)
 def dashboard_summary(year: Optional[int] = None):
     """
     Returns total expense, highest expense month, and monthly breakdown for a given year.
@@ -81,7 +81,7 @@ def dashboard_summary(year: Optional[int] = None):
     )
 
 
-@router.get("/dashboard/transactions/{year}/{month}", response_model=List[TransactionResponse])
+@router.get("/transactions/{year}/{month}", response_model=List[TransactionResponse])
 def transactions_by_month(year: int, month: int):
     """
     Returns all transactions for the specified month and year, ordered by date ascending.
