@@ -31,7 +31,6 @@ export const statementService = {
     });
   },
 
-  // Matches your NEW PUT /statements/{id}/filename endpoint
   updateFilename: async (id, newName) => {
     const response = await apiClient.put(`/statements/${id}/filename`, {
       filename: newName
@@ -39,12 +38,27 @@ export const statementService = {
     return response.data;
   },
 
-  // Matches your /transactions/statement/{id}/transactions endpoint
   getStatementTransactions: async (id) => {
     const response = await apiClient.get(`/transactions/statement/${id}/transactions`);
-    // CRITICAL: We return response.data directly here
     return response.data;
   }
 };
+
+// --- ADDED THIS SECTION ---
+export const transactionService = {
+  // Get all available categories
+  getCategories: async () => {
+    const response = await apiClient.get('/transactions/categories');
+    return response.data;
+  },
+
+  // Bulk assign category
+  // payload: { transaction_ids: [1, 2, 3], category_name: "Food" }
+  assignCategory: async (payload) => {
+    const response = await apiClient.post('/transactions/assign-category', payload);
+    return response.data;
+  }
+};
+// ---------------------------
 
 export default apiClient;
