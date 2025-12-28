@@ -11,6 +11,7 @@ from db.db import (
     get_statements,
     get_transactions_for_statement,
     insert_transactions,
+    update_statement_filename,  # ✅ new import
 )
 from tool.pdf import extract_text_from_pdf
 from tool.transactions import parse_text_to_transactions
@@ -49,6 +50,14 @@ class UploadResponse(BaseModel):
     message: str
     statement_id: int
     status: str
+
+
+class StatementRenameRequest(BaseModel):
+    """
+    Request model for renaming an uploaded statement.
+    """
+    filename: str
+
 
 # ==============================================================================================================================================
 # Background Job
@@ -148,4 +157,28 @@ def get_statement(statement_id: int) -> StatementOut:
 
     transactions = get_transactions_for_statement(statement_id)
     stmt["transactions"] = transactions
+    return StatementOut(**stmt)
+
+
+@router.put("/{statement_id}/filename", response_model=StatementOut)
+def update_statement_filename_endpoint(
+    statement_id: int,
+    payload: StatementRenameRequest,
+) -> StatementOut:
+    """
+    Update the filename of an uploaded statement.
+    This only updates metadata and does not re-upload or reprocess the file.
+    """
+
+    if not payload.filename.strip():
+        raise HTTPException(status_code=400, detail="Filename cannot be empty")
+
+    statements = get_statements()
+    stmt = next((s for s in statements if s["id"] == statement_id), None)
+    if not stmt:
+        raise HTTPException(status_code=404, detail="Statement not found")
+
+    update_statement_filename(statement_id, payload.filename)
+
+    stmt["filename"] = payload.filename
     return StatementOut(**stmt)

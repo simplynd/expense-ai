@@ -7,6 +7,7 @@ import {
   DollarSign 
 } from 'lucide-react';
 import Dashboard from './pages/Dashboard';
+import Statements from './pages/Statements';
 
 function App() {
   const [activePage, setActivePage] = useState('dashboard');
@@ -15,13 +16,7 @@ function App() {
     switch(activePage) {
       case 'dashboard': 
         return <Dashboard />;
-      case 'statements': 
-        return (
-          <div className="p-12 text-center bg-white rounded-3xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-semibold text-gray-800">Statements Management</h2>
-            <p className="text-gray-500 mt-2">This module is currently under development.</p>
-          </div>
-        );
+      case 'statements': return <Statements />;
       default: 
         return <Dashboard />;
     }

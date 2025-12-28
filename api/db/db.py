@@ -88,6 +88,19 @@ def get_statements() -> List[Dict[str, Any]]:
     conn.close()
     return [dict(row) for row in rows]
 
+def update_statement_filename(statement_id: int, filename: str):
+    conn = get_connection()
+    conn.execute(
+        """
+        UPDATE statements
+        SET filename = ?
+        WHERE id = ?
+        """,
+        (filename, statement_id),
+    )
+    conn.commit()
+    conn.close()
+
 
 # =========================
 # Transaction Operations
