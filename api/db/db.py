@@ -31,21 +31,52 @@ def init_db():
         conn.executescript(f.read())
     conn.commit()
     conn.close()
-    # print("✅ Database initialized")
+
 
 # =========================
 # Statement Operations
 # =========================
 
-def create_statement(filename: str, file_size: int, status: str) -> int:
+def create_statement(
+    filename: str,
+    file_size: int,
+    status: str,
+    source_type: str = "pdf",
+) -> int:
     conn = get_connection()
     cur = conn.cursor()
     cur.execute(
         """
-        INSERT INTO statements (filename, file_size, status)
-        VALUES (?, ?, ?)
+        INSERT INTO statements (filename, file_size, status, source_type)
+        VALUES (?, ?, ?, ?)
         """,
-        (filename, file_size, status),
+        (filename, file_size, status, source_type),
+    )
+    conn.commit()
+    statement_id = cur.lastrowid
+    conn.close()
+    return statement_id
+
+
+def create_manual_statement(filename: str) -> int:
+    """
+    Create a manual statement container.
+    Always completed, file_size = 0, source_type = manual.
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        INSERT INTO statements (
+            filename,
+            file_size,
+            status,
+            source_type,
+            processed_at
+        )
+        VALUES (?, 0, 'completed', 'manual', CURRENT_TIMESTAMP)
+        """,
+        (filename,),
     )
     conn.commit()
     statement_id = cur.lastrowid
@@ -76,18 +107,6 @@ def update_statement_status(
     conn.close()
 
 
-def get_statements() -> List[Dict[str, Any]]:
-    conn = get_connection()
-    rows = conn.execute(
-        """
-        SELECT *
-        FROM statements
-        ORDER BY uploaded_at DESC
-        """
-    ).fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
-
 def update_statement_filename(statement_id: int, filename: str):
     conn = get_connection()
     conn.execute(
@@ -100,6 +119,19 @@ def update_statement_filename(statement_id: int, filename: str):
     )
     conn.commit()
     conn.close()
+
+
+def get_statements() -> List[Dict[str, Any]]:
+    conn = get_connection()
+    rows = conn.execute(
+        """
+        SELECT *
+        FROM statements
+        ORDER BY uploaded_at DESC
+        """
+    ).fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
 
 
 # =========================
@@ -138,6 +170,141 @@ def insert_transactions(
     conn.close()
 
 
+def insert_manual_transaction(
+    statement_id: int,
+    transaction_date: str,
+    vendor_raw: str,
+    amount: float,
+    category_name: Optional[str] = None,
+):
+    """
+    Insert a manual transaction.
+    Only allowed for manual statements.
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+
+    stmt = cur.execute(
+        "SELECT source_type FROM statements WHERE id = ?",
+        (statement_id,),
+    ).fetchone()
+
+    if not stmt or stmt["source_type"] != "manual":
+        conn.close()
+        raise ValueError("Manual transactions must belong to a manual statement")
+
+    category_id = None
+    if category_name:
+        category_id = get_or_create_category(category_name)
+
+    cur.execute(
+        """
+        INSERT INTO transactions (
+            statement_id,
+            transaction_date,
+            vendor_raw,
+            amount,
+            category_id
+        )
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (statement_id, transaction_date, vendor_raw, amount, category_id),
+    )
+
+    conn.commit()
+    conn.close()
+
+
+def update_manual_transaction(
+    transaction_id: int,
+    updates: Dict[str, Any],
+):
+    """
+    Update a manual transaction.
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+
+    row = cur.execute(
+        """
+        SELECT s.source_type
+        FROM transactions t
+        JOIN statements s ON t.statement_id = s.id
+        WHERE t.id = ?
+        """,
+        (transaction_id,),
+    ).fetchone()
+
+    if not row or row["source_type"] != "manual":
+        conn.close()
+        raise ValueError("Only manual transactions can be updated")
+
+    fields = []
+    values = []
+
+    for key in ("transaction_date", "vendor_raw", "amount"):
+        if key in updates:
+            fields.append(f"{key} = ?")
+            values.append(updates[key])
+
+    if "category" in updates:
+        category_id = (
+            get_or_create_category(updates["category"])
+            if updates["category"]
+            else None
+        )
+        fields.append("category_id = ?")
+        values.append(category_id)
+
+    if not fields:
+        conn.close()
+        return
+
+    values.append(transaction_id)
+
+    cur.execute(
+        f"""
+        UPDATE transactions
+        SET {', '.join(fields)}
+        WHERE id = ?
+        """,
+        values,
+    )
+
+    conn.commit()
+    conn.close()
+
+
+def delete_manual_transaction(transaction_id: int):
+    """
+    Delete a manual transaction.
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+
+    row = cur.execute(
+        """
+        SELECT s.source_type
+        FROM transactions t
+        JOIN statements s ON t.statement_id = s.id
+        WHERE t.id = ?
+        """,
+        (transaction_id,),
+    ).fetchone()
+
+    if not row or row["source_type"] != "manual":
+        conn.close()
+        raise ValueError("Only manual transactions can be deleted")
+
+    cur.execute(
+        "DELETE FROM transactions WHERE id = ?",
+        (transaction_id,),
+    )
+
+    conn.commit()
+    conn.close()
+
+
 def get_transactions_for_statement(
     statement_id: int,
 ) -> List[Dict[str, Any]]:
@@ -147,26 +314,7 @@ def get_transactions_for_statement(
         SELECT t.*, c.name AS category
         FROM transactions t
         LEFT JOIN categories c ON t.category_id = c.id
-        WHERE t.statement_id = ? 
-        ORDER BY t.transaction_date
-        """,
-        (statement_id,),
-    ).fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
-
-def get_transactions_for_statement_exclude_payment(
-    statement_id: int,
-) -> List[Dict[str, Any]]:
-    conn = get_connection()
-    rows = conn.execute(
-        """
-        SELECT t.*, c.name AS category
-        FROM transactions t
-        LEFT JOIN categories c ON t.category_id = c.id
-        WHERE t.statement_id = ? 
-        AND t.vendor_normalized NOT LIKE '%payment%'  -- Excludes vendors with 'payment' in the name
-        AND t.vendor_raw NOT LIKE '%payment%'         -- Backup check for raw vendor names
+        WHERE t.statement_id = ?
         ORDER BY t.transaction_date
         """,
         (statement_id,),
