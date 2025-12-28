@@ -4,7 +4,7 @@ from typing import List, Dict, Optional
 from datetime import datetime
 from collections import defaultdict
 
-from db.db import get_transactions_for_statement, get_statements
+from db.db import get_transactions_for_statement_exclude_payment, get_statements
 
 router = APIRouter()
 
@@ -52,7 +52,7 @@ def dashboard_summary(year: Optional[int] = None):
 
     statements = get_statements()
     for stmt in statements:
-        transactions = get_transactions_for_statement(stmt["id"])
+        transactions = get_transactions_for_statement_exclude_payment(stmt["id"])
         for tx in transactions:
             try:
                 if tx["transaction_date"]:
@@ -92,7 +92,7 @@ def transactions_by_month(year: int, month: int):
     result = []
     statements = get_statements()
     for stmt in statements:
-        transactions = get_transactions_for_statement(stmt["id"])
+        transactions = get_transactions_for_statement_exclude_payment(stmt["id"])
         for tx in transactions:
             try:
                 if tx["transaction_date"]:

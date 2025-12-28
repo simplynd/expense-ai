@@ -1,23 +1,14 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-// Temporary mock data based on your API spec
-const data = [
-  { month: 'Jan', amount: 1200 },
-  { month: 'Feb', amount: 2100 },
-  { month: 'Mar', amount: 4500 }, // Highest month
-  { month: 'Apr', amount: 1800 },
-  { month: 'May', amount: 2400 },
-  { month: 'Jun', amount: 1700 },
-  { month: 'Jul', amount: 2900 },
-  { month: 'Aug', amount: 3100 },
-  { month: 'Sep', amount: 1500 },
-  { month: 'Oct', amount: 2200 },
-  { month: 'Nov', amount: 1900 },
-  { month: 'Dec', amount: 2400 },
-];
+// We removed the "const data = [...]" from here so it doesn't conflict
+export default function MonthlyExpenseChart({ data, onMonthSelect, selectedMonth }) {
+  
+  // Safety check: if data isn't loaded yet, show a placeholder
+  if (!data || data.length === 0) {
+    return <div className="h-[400px] flex items-center justify-center bg-white rounded-2xl border border-gray-100 text-gray-400">Loading chart data...</div>;
+  }
 
-export default function MonthlyExpenseChart({ onMonthSelect, selectedMonth }) {
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 w-full h-[400px]">
       <div className="flex justify-between items-center mb-6">
@@ -41,22 +32,24 @@ export default function MonthlyExpenseChart({ onMonthSelect, selectedMonth }) {
             axisLine={false} 
             tickLine={false} 
             tick={{ fill: '#94A3B8', fontSize: 12 }} 
+            tickFormatter={(value) => `$${value}`}
           />
           <Tooltip 
             cursor={{ fill: '#F8FAFC' }}
             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+            formatter={(value) => [`$${value.toFixed(2)}`, 'Expense']}
           />
           <Bar 
             dataKey="amount" 
             radius={[6, 6, 0, 0]} 
-            onClick={(data) => onMonthSelect(data.month)}
+            onClick={(clickedData) => onMonthSelect(clickedData.month)}
             className="cursor-pointer"
           >
             {data.map((entry, index) => (
               <Cell 
                 key={`cell-${index}`} 
                 fill={entry.month === selectedMonth ? '#2563EB' : '#93C5FD'} 
-                className="transition-all duration-300"
+                className="transition-all duration-300 hover:opacity-80"
               />
             ))}
           </Bar>

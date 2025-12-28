@@ -20,73 +20,48 @@ function StatCard({ title, value, subtext, icon: Icon, colorClass }) {
 }
 
 export default function Dashboard() {
-  const [selectedMonth, setSelectedMonth] = useState('Mar');
+  const [selectedMonth, setSelectedMonth] = useState('Nov'); // Default to Nov since you have data there
   const { summary, chartData, transactions, loading, error } = useDashboard(selectedMonth);
 
-  // If the API is still thinking, show a loading spinner
-  if (loading) {
-    return (
-      <div className="h-96 flex flex-col items-center justify-center text-gray-500 gap-4">
-        <Loader2 className="animate-spin text-blue-600" size={40} />
-        <p className="font-medium">Fetching financial data...</p>
-      </div>
-    );
-  }
-
-  // If the server is down or returns an error
-  if (error) {
-    return (
-      <div className="p-8 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-center">
-        {error}. Please ensure your backend server is running at http://127.0.0.1:8000
-      </div>
-    );
-  }
+  if (loading) return <div className="h-96 flex items-center justify-center">Loading...</div>;
 
   return (
     <div className="space-y-8 pb-12">
-      {/* KPI Row - Using Real Data from Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="Total Expense" 
-          value={`$${summary?.total_expense?.toLocaleString()}`} 
-          subtext="YTD Total" 
-          icon={TrendingUp} 
+      {/* Updated KPI Row - 3 Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard
+          title="Total Expense"
+          value={`$${summary?.total_expense?.toFixed(2)}`}
+          subtext="YTD Total"
+          icon={TrendingUp}
           colorClass="bg-blue-600"
         />
-        <StatCard 
-          title="Highest Month" 
-          value={`${summary?.highest_expense_month} – $${summary?.highest_expense_amount?.toLocaleString()}`} 
-          subtext="Peak spending" 
-          icon={LayoutDashboard} 
+        <StatCard
+          title="Highest Month"
+          value={`${summary?.highest_expense_month} – $${summary?.highest_expense_amount?.toFixed(2)}`}
+          subtext="Peak spending"
+          icon={LayoutDashboard}
           colorClass="bg-teal-500"
         />
-        <StatCard 
-          title="Avg. Monthly Spend" 
-          value={`$${summary?.average_monthly_spend?.toLocaleString()}`} 
-          subtext="Per month" 
-          icon={DollarSign} 
+        <StatCard
+          title="Avg. Monthly Spend"
+          value={`$${summary?.average_monthly_spend?.toFixed(2)}`}
+          subtext="Per month"
+          icon={DollarSign}
           colorClass="bg-indigo-500"
-        />
-        <StatCard 
-          title="Statements" 
-          value={summary?.statements_uploaded} 
-          subtext="Total uploaded" 
-          icon={CloudUpload} 
-          colorClass="bg-emerald-500"
         />
       </div>
 
-      {/* Chart Section - Passing real chartData */}
-      <MonthlyExpenseChart 
+      <MonthlyExpenseChart
         data={chartData}
-        selectedMonth={selectedMonth} 
-        onMonthSelect={setSelectedMonth} 
+        selectedMonth={selectedMonth}
+        onMonthSelect={setSelectedMonth}
       />
 
-      {/* Table Section - Passing real transactions */}
-      <MonthlyTransactionsTable 
+      {/* Passing the real transactions array from our hook */}
+      <MonthlyTransactionsTable
         transactions={transactions}
-        selectedMonth={selectedMonth} 
+        selectedMonth={selectedMonth}
       />
     </div>
   );

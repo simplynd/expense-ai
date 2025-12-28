@@ -134,7 +134,26 @@ def get_transactions_for_statement(
         SELECT t.*, c.name AS category
         FROM transactions t
         LEFT JOIN categories c ON t.category_id = c.id
-        WHERE t.statement_id = ?
+        WHERE t.statement_id = ? 
+        ORDER BY t.transaction_date
+        """,
+        (statement_id,),
+    ).fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def get_transactions_for_statement_exclude_payment(
+    statement_id: int,
+) -> List[Dict[str, Any]]:
+    conn = get_connection()
+    rows = conn.execute(
+        """
+        SELECT t.*, c.name AS category
+        FROM transactions t
+        LEFT JOIN categories c ON t.category_id = c.id
+        WHERE t.statement_id = ? 
+        AND t.vendor_normalized NOT LIKE '%payment%'  -- Excludes vendors with 'payment' in the name
+        AND t.vendor_raw NOT LIKE '%payment%'         -- Backup check for raw vendor names
         ORDER BY t.transaction_date
         """,
         (statement_id,),
