@@ -7,6 +7,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 from db.db import (
     create_statement,
+    create_manual_statement,
     update_statement_status,
     get_statements,
     get_transactions_for_statement,
@@ -56,6 +57,9 @@ class StatementRenameRequest(BaseModel):
     """
     Request model for renaming an uploaded statement.
     """
+    filename: str
+
+class ManualStatementCreateRequest(BaseModel):
     filename: str
 
 
@@ -181,4 +185,28 @@ def update_statement_filename_endpoint(
     update_statement_filename(statement_id, payload.filename)
 
     stmt["filename"] = payload.filename
+    return StatementOut(**stmt)
+
+@router.post("/manual", response_model=StatementOut)
+def create_manual_statement_endpoint(
+    payload: ManualStatementCreateRequest,
+) -> StatementOut:
+    """
+    Create a manual (non-PDF) statement.
+    Used for cash / ad-hoc transaction entry.
+    """
+
+    if not payload.filename.strip():
+        raise HTTPException(status_code=400, detail="Filename cannot be empty")
+
+    statement_id = create_manual_statement(payload.filename)
+
+    # Fetch created statement to return full object
+    statements = get_statements()
+    stmt = next((s for s in statements if s["id"] == statement_id), None)
+
+    if not stmt:
+        raise HTTPException(status_code=500, detail="Failed to create manual statement")
+
+    stmt["transactions"] = []
     return StatementOut(**stmt)

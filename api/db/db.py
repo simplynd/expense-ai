@@ -174,8 +174,9 @@ def insert_manual_transaction(
     statement_id: int,
     transaction_date: str,
     vendor_raw: str,
+    vendor_normalized: str,
     amount: float,
-    category_name: Optional[str] = None,
+    category_id: int,
 ):
     """
     Insert a manual transaction.
@@ -193,9 +194,9 @@ def insert_manual_transaction(
         conn.close()
         raise ValueError("Manual transactions must belong to a manual statement")
 
-    category_id = None
-    if category_name:
-        category_id = get_or_create_category(category_name)
+    # category_id = None
+    # if category_name:
+    #     category_id = get_or_create_category(category_name)
 
     cur.execute(
         """
@@ -203,12 +204,13 @@ def insert_manual_transaction(
             statement_id,
             transaction_date,
             vendor_raw,
+            vendor_normalized,
             amount,
             category_id
         )
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?)
         """,
-        (statement_id, transaction_date, vendor_raw, amount, category_id),
+        (statement_id, transaction_date, vendor_raw, vendor_normalized, amount, category_id),
     )
 
     conn.commit()
@@ -322,6 +324,25 @@ def get_transactions_for_statement(
     conn.close()
     return [dict(row) for row in rows]
 
+def get_transactions_for_statement_exclude_payment(
+    statement_id: int,
+) -> List[Dict[str, Any]]:
+    conn = get_connection()
+    rows = conn.execute(
+        """
+        SELECT t.*, c.name AS category
+        FROM transactions t
+        LEFT JOIN categories c ON t.category_id = c.id
+        WHERE t.statement_id = ? 
+            AND t.vendor_normalized NOT LIKE '%payment%'
+            AND t.vendor_raw NOT LIKE '%payment%'   
+        ORDER BY t.transaction_date
+        """,
+        (statement_id,),
+    ).fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
 
 def assign_category_to_transactions(
     transaction_ids: List[int],
@@ -338,6 +359,21 @@ def assign_category_to_transactions(
     )
     conn.commit()
     conn.close()
+
+
+def is_manual_transaction(transaction_id: int) -> bool:
+    conn = get_connection()
+    row = conn.execute(
+        """
+        SELECT 1
+        FROM transactions t
+        JOIN statements s ON t.statement_id = s.id
+        WHERE t.id = ? AND s.source_type = 'manual'
+        """,
+        (transaction_id,),
+    ).fetchone()
+    conn.close()
+    return row is not None
 
 
 # =========================
