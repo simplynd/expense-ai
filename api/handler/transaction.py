@@ -11,6 +11,7 @@ from db.db import (
     update_manual_transaction,
     delete_manual_transaction,
     is_manual_transaction,
+    get_transaction_by_id
 )
 
 from tool.vendor import normalize_vendor
@@ -121,17 +122,24 @@ def create_manual_transaction_endpoint(payload: ManualTransactionCreate):
         normalized_vendor = normalize_vendor(payload.vendor_raw)
     except Exception as e:
         pass
+    
+    try:
+        transaction_id  = insert_manual_transaction(
+            statement_id=payload.statement_id,
+            transaction_date=payload.transaction_date,
+            vendor_raw=payload.vendor_raw,
+            vendor_normalized=normalized_vendor,
+            amount=payload.amount,
+            category_id=category_id,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    tx = insert_manual_transaction(
-        statement_id=payload.statement_id,
-        transaction_date=payload.transaction_date,
-        vendor_raw=payload.vendor_raw,
-        amount=payload.amount,
-        category_id=category_id,
-    )
+    tx = get_transaction_by_id(transaction_id)
+    if not tx:
+        raise HTTPException(status_code=500, detail="Transaction creation failed")
 
     return TransactionOut(**tx)
-
 
 @router.put("/{transaction_id}", response_model=TransactionOut)
 def update_manual_transaction_endpoint(
@@ -149,22 +157,40 @@ def update_manual_transaction_endpoint(
             detail="Only transactions from manual statements can be edited",
         )
 
-    category_id = None
-    if payload.category:
-        category_id = get_or_create_category(payload.category)
+    updates = {}
 
-    tx = update_manual_transaction(
-        transaction_id=transaction_id,
-        transaction_date=payload.transaction_date,
-        vendor_raw=payload.vendor_raw,
-        amount=payload.amount,
-        category_id=category_id,
-    )
+    if payload.transaction_date is not None:
+        updates["transaction_date"] = payload.transaction_date
 
+    if payload.vendor_raw is not None:
+        updates["vendor_raw"] = payload.vendor_raw
+
+    if payload.amount is not None:
+        updates["amount"] = payload.amount
+
+    if payload.category is not None:
+        updates["category"] = payload.category
+
+    if not updates:
+        raise HTTPException(
+            status_code=400,
+            detail="No fields provided for update",
+        )
+
+    try:
+        update_manual_transaction(
+            transaction_id=transaction_id,
+            updates=updates,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    tx = get_transaction_by_id(transaction_id)
     if not tx:
-        raise HTTPException(status_code=404, detail="Transaction not found")
+        raise HTTPException(status_code=500, detail="Transaction update failed")
 
     return TransactionOut(**tx)
+
 
 
 @router.delete("/{transaction_id}", status_code=204)

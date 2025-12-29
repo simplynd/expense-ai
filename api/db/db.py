@@ -213,8 +213,10 @@ def insert_manual_transaction(
         (statement_id, transaction_date, vendor_raw, vendor_normalized, amount, category_id),
     )
 
+    transaction_id = cur.lastrowid
     conn.commit()
     conn.close()
+    return transaction_id
 
 
 def update_manual_transaction(
@@ -273,8 +275,10 @@ def update_manual_transaction(
         values,
     )
 
+    transaction_id = cur.lastrowid
     conn.commit()
     conn.close()
+    return transaction_id
 
 
 def delete_manual_transaction(transaction_id: int):
@@ -374,6 +378,21 @@ def is_manual_transaction(transaction_id: int) -> bool:
     ).fetchone()
     conn.close()
     return row is not None
+
+
+def get_transaction_by_id(transaction_id: int) -> Optional[Dict[str, Any]]:
+    conn = get_connection()
+    row = conn.execute(
+        """
+        SELECT t.*, c.name AS category
+        FROM transactions t
+        LEFT JOIN categories c ON t.category_id = c.id
+        WHERE t.id = ?
+        """,
+        (transaction_id,),
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
 
 
 # =========================

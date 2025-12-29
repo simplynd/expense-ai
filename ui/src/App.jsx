@@ -4,11 +4,13 @@ import {
   FileText,
   Lightbulb,
   MessageSquare,
-  DollarSign
+  DollarSign,
+  PlusCircle // Added for Adjunct Outlays
 } from 'lucide-react';
 import Dashboard from './pages/Dashboard';
 import Statements from './pages/Statements';
 import Categorization from './pages/Categorization';
+import AdjunctOutlays from './pages/AdjunctOutlays'; // 1. IMPORT THE NEW PAGE
 
 function App() {
   const [activePage, setActivePage] = useState('dashboard');
@@ -21,8 +23,9 @@ function App() {
         return <Statements />;
       case 'categorization':
         return <Categorization />;
+      case 'adjunct': // 2. ADD THE NEW CASE
+        return <AdjunctOutlays />;
       case 'insights':
-        // We'll build this next!
         return <div className="p-10 text-center text-gray-500 italic">Insights & AI Chat coming soon...</div>;
       default:
         return <Dashboard />;
@@ -42,7 +45,6 @@ function App() {
         </div>
 
         <nav className="flex-1 px-4 py-2 space-y-2">
-          {/* Dashboard Button */}
           <button
             onClick={() => setActivePage('dashboard')}
             className={`w-full p-3.5 rounded-xl flex items-center gap-3 transition-all duration-200 ${activePage === 'dashboard'
@@ -54,7 +56,6 @@ function App() {
             <span className="font-medium">Dashboard</span>
           </button>
 
-          {/* Statements Button */}
           <button
             onClick={() => setActivePage('statements')}
             className={`w-full p-3.5 rounded-xl flex items-center gap-3 transition-all duration-200 ${activePage === 'statements'
@@ -66,7 +67,18 @@ function App() {
             <span className="font-medium">Statements</span>
           </button>
 
-          {/* Categorization Button - UPDATED */}
+          {/* 3. NEW ADJUNCT OUTLAYS BUTTON */}
+          <button
+            onClick={() => setActivePage('adjunct')}
+            className={`w-full p-3.5 rounded-xl flex items-center gap-3 transition-all duration-200 ${activePage === 'adjunct'
+              ? 'bg-emerald-600 text-white shadow-lg'
+              : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
+          >
+            <PlusCircle size={20} />
+            <span className="font-medium">Adjunct Outlays</span>
+          </button>
+
           <button
             onClick={() => setActivePage('categorization')}
             className={`w-full p-3.5 rounded-xl flex items-center gap-3 transition-all duration-200 ${activePage === 'categorization'
@@ -78,7 +90,6 @@ function App() {
             <span className="font-medium">Categorization</span>
           </button>
 
-          {/* Insights Button - UPDATED */}
           <button 
             onClick={() => setActivePage('insights')}
             className={`w-full p-3.5 rounded-xl flex items-center gap-3 transition-all duration-200 ${activePage === 'insights'
@@ -102,10 +113,10 @@ function App() {
               </div>
               <div>
                 <h1 className="text-xl font-extrabold text-gray-800 leading-none">
-                  {activePage.charAt(0).toUpperCase() + activePage.slice(1)}
+                  {activePage === 'adjunct' ? 'Adjunct Outlays' : activePage.charAt(0).toUpperCase() + activePage.slice(1)}
                 </h1>
                 <p className="text-[11px] font-bold text-blue-500 uppercase tracking-[0.15em] mt-1">
-                  {activePage === 'dashboard' ? 'Analytics Dashboard' : 'Management Portal'}
+                   {activePage === 'adjunct' ? 'Manual Ledger' : 'Analytics Dashboard'}
                 </p>
               </div>
             </div>

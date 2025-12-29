@@ -41,7 +41,14 @@ export const statementService = {
   getStatementTransactions: async (id) => {
     const response = await apiClient.get(`/transactions/statement/${id}/transactions`);
     return response.data;
-  }
+  },
+
+  // NEW: Create a bucket for manual entries (Adjunct Outlays)
+  createManualStatement: async (filename) => {
+    const response = await apiClient.post('/statements/manual', { filename });
+    return response.data;
+  },
+
 };
 
 // --- ADDED THIS SECTION ---
@@ -57,7 +64,26 @@ export const transactionService = {
   assignCategory: async (payload) => {
     const response = await apiClient.post('/transactions/assign-category', payload);
     return response.data;
-  }
+  },
+
+  // NEW: Create a manual record
+  addManualTransaction: async (payload) => {
+    const response = await apiClient.post('/transactions/manual', payload);
+    return response.data;
+  },
+
+  // NEW: Update a manual record
+  updateManualTransaction: async (id, payload) => {
+    const response = await apiClient.put(`/transactions/${id}`, payload);
+    return response.data;
+  },
+
+  // NEW: Delete a manual record
+  deleteTransaction: async (id) => {
+    const response = await apiClient.delete(`/transactions/${id}`);
+    return response.data;
+  },
+  
 };
 // ---------------------------
 

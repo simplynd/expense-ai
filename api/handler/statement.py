@@ -41,10 +41,12 @@ class StatementOut(BaseModel):
     filename: str
     file_size: int
     status: str
+    source_type: str 
     uploaded_at: str
     processed_at: Optional[str]
     error_message: Optional[str]
     transactions: Optional[List[TransactionOut]] = []
+
 
 
 class UploadResponse(BaseModel):
