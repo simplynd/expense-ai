@@ -439,3 +439,51 @@ def get_categories() -> List[Dict[str, Any]]:
     ).fetchall()
     conn.close()
     return [dict(row) for row in rows]
+
+
+# =========================
+# MCP Operations
+# =========================
+
+
+def get_spending_summary(year: int):
+    """Provides a high-level summary of spending grouped by category."""
+    conn = get_connection()
+    # Aggregates totals and counts by category for the LLM to reason about
+    query = """
+        SELECT c.name as category, 
+               ROUND(SUM(t.amount), 2) as total_amount, 
+               COUNT(t.id) as transaction_count
+        FROM transactions t
+        LEFT JOIN categories c ON t.category_id = c.id
+        WHERE strftime('%Y', t.transaction_date) = ?
+        GROUP BY c.name
+        ORDER BY total_amount DESC
+    """
+    rows = conn.execute(query, (str(year),)).fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def search_transactions(vendor: str = None, category: str = None, limit: int = 20):
+    """Search for specific transactions with optional filters."""
+    conn = get_connection()
+    query = """
+        SELECT t.transaction_date, t.vendor_raw, t.amount, c.name as category 
+        FROM transactions t 
+        LEFT JOIN categories c ON t.category_id = c.id 
+        WHERE 1=1
+    """
+    params = []
+    if vendor:
+        query += " AND (t.vendor_raw LIKE ? OR t.vendor_normalized LIKE ?)"
+        params.extend([f"%{vendor}%", f"%{vendor}%"])
+    if category:
+        query += " AND c.name LIKE ?"
+        params.append(f"%{category}%")
+    
+    query += " ORDER BY t.transaction_date DESC LIMIT ?"
+    params.append(limit)
+    
+    rows = conn.execute(query, params).fetchall()
+    conn.close()
+    return [dict(row) for row in rows]

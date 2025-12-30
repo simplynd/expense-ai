@@ -5,12 +5,13 @@ import {
   Lightbulb,
   MessageSquare,
   DollarSign,
-  PlusCircle // Added for Adjunct Outlays
+  PlusCircle 
 } from 'lucide-react';
 import Dashboard from './pages/Dashboard';
 import Statements from './pages/Statements';
 import Categorization from './pages/Categorization';
-import AdjunctOutlays from './pages/AdjunctOutlays'; // 1. IMPORT THE NEW PAGE
+import AdjunctOutlays from './pages/AdjunctOutlays'; 
+import Insights from './pages/Insights';
 
 function App() {
   const [activePage, setActivePage] = useState('dashboard');
@@ -26,7 +27,7 @@ function App() {
       case 'adjunct': // 2. ADD THE NEW CASE
         return <AdjunctOutlays />;
       case 'insights':
-        return <div className="p-10 text-center text-gray-500 italic">Insights & AI Chat coming soon...</div>;
+        return <Insights />
       default:
         return <Dashboard />;
     }
