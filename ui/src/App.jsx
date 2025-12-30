@@ -5,16 +5,22 @@ import {
   Lightbulb,
   MessageSquare,
   DollarSign,
-  PlusCircle 
+  PlusCircle
 } from 'lucide-react';
 import Dashboard from './pages/Dashboard';
 import Statements from './pages/Statements';
 import Categorization from './pages/Categorization';
-import AdjunctOutlays from './pages/AdjunctOutlays'; 
+import AdjunctOutlays from './pages/AdjunctOutlays';
 import Insights from './pages/Insights';
 
 function App() {
   const [activePage, setActivePage] = useState('dashboard');
+
+  // Define the state here so it lives as long as the app is open
+  const [chatMessages, setChatMessages] = useState([
+    { role: 'assistant', content: 'Hi! I am your local financial analyst...' }
+  ]);
+  const [chatHistory, setChatHistory] = useState([]); // Technical history for LLM
 
   const renderPage = () => {
     switch (activePage) {
@@ -27,7 +33,12 @@ function App() {
       case 'adjunct': // 2. ADD THE NEW CASE
         return <AdjunctOutlays />;
       case 'insights':
-        return <Insights />
+        return <Insights
+          messages={chatMessages}
+          setMessages={setChatMessages}
+          history={chatHistory}
+          setHistory={setChatHistory}
+        />
       default:
         return <Dashboard />;
     }
@@ -91,7 +102,7 @@ function App() {
             <span className="font-medium">Categorization</span>
           </button>
 
-          <button 
+          <button
             onClick={() => setActivePage('insights')}
             className={`w-full p-3.5 rounded-xl flex items-center gap-3 transition-all duration-200 ${activePage === 'insights'
               ? 'bg-blue-600 text-white shadow-lg'
@@ -117,7 +128,7 @@ function App() {
                   {activePage === 'adjunct' ? 'Adjunct Outlays' : activePage.charAt(0).toUpperCase() + activePage.slice(1)}
                 </h1>
                 <p className="text-[11px] font-bold text-blue-500 uppercase tracking-[0.15em] mt-1">
-                   {activePage === 'adjunct' ? 'Manual Ledger' : 'Analytics Dashboard'}
+                  {activePage === 'adjunct' ? 'Manual Ledger' : 'Analytics Dashboard'}
                 </p>
               </div>
             </div>

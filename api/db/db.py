@@ -446,44 +446,67 @@ def get_categories() -> List[Dict[str, Any]]:
 # =========================
 
 
-def get_spending_summary(year: int):
-    """Provides a high-level summary of spending grouped by category."""
+def get_yearly_transactions(year: int):
+    """Fetches all transactions for a specific year including category names."""
     conn = get_connection()
-    # Aggregates totals and counts by category for the LLM to reason about
     query = """
-        SELECT c.name as category, 
-               ROUND(SUM(t.amount), 2) as total_amount, 
-               COUNT(t.id) as transaction_count
-        FROM transactions t
-        LEFT JOIN categories c ON t.category_id = c.id
+        SELECT 
+            t.transaction_date, 
+            t.vendor_raw as vendor, 
+            t.amount, 
+            c.name as category 
+        FROM transactions t 
+        LEFT JOIN categories c ON t.category_id = c.id 
         WHERE strftime('%Y', t.transaction_date) = ?
-        GROUP BY c.name
-        ORDER BY total_amount DESC
+        ORDER BY t.transaction_date DESC
     """
     rows = conn.execute(query, (str(year),)).fetchall()
     conn.close()
     return [dict(row) for row in rows]
 
-def search_transactions(vendor: str = None, category: str = None, limit: int = 20):
-    """Search for specific transactions with optional filters."""
+def search_transactions(query_term: str):
+    """Search for transactions by vendor name or category name."""
     conn = get_connection()
+    # Flexible search across both vendor and category
     query = """
-        SELECT t.transaction_date, t.vendor_raw, t.amount, c.name as category 
+        SELECT 
+            t.transaction_date, 
+            t.vendor_raw as vendor, 
+            t.amount, 
+            c.name as category 
         FROM transactions t 
         LEFT JOIN categories c ON t.category_id = c.id 
-        WHERE 1=1
+        WHERE t.vendor_raw LIKE ? 
+           OR t.vendor_normalized LIKE ? 
+           OR c.name LIKE ?
+        ORDER BY t.transaction_date DESC
+        LIMIT 100
     """
-    params = []
-    if vendor:
-        query += " AND (t.vendor_raw LIKE ? OR t.vendor_normalized LIKE ?)"
-        params.extend([f"%{vendor}%", f"%{vendor}%"])
-    if category:
-        query += " AND c.name LIKE ?"
-        params.append(f"%{category}%")
-    
-    query += " ORDER BY t.transaction_date DESC LIMIT ?"
-    params.append(limit)
-    
-    rows = conn.execute(query, params).fetchall()
+    search_val = f"%{query_term}%"
+    rows = conn.execute(query, (search_val, search_val, search_val)).fetchall()
     conn.close()
     return [dict(row) for row in rows]
+
+
+def get_net_spending_aggregation(year: int):
+    """
+    Executes a precise SQL aggregation for net spending.
+    Excludes internal transfers/payments and nets out refunds.
+    """
+    conn = get_connection()
+    # We use a single query to get the total and the count for context
+    query = """
+        SELECT 
+            ROUND(SUM(amount), 2) as net_total,
+            COUNT(id) as transaction_count
+        FROM transactions 
+        WHERE strftime('%Y', transaction_date) = ?
+          AND vendor_raw NOT LIKE '%PAYMENT%'
+          AND vendor_raw NOT LIKE '%TRANSFER%'
+          AND vendor_raw NOT LIKE '%CREDIT CARD%'
+    """
+    try:
+        row = conn.execute(query, (str(year),)).fetchone()
+        return dict(row) if row else {"net_total": 0, "transaction_count": 0}
+    finally:
+        conn.close()

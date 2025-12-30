@@ -2,11 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2, Wifi, WifiOff, Database } from 'lucide-react';
 import { llmOrchestrator } from '../services/llmOrchestrator';
 
-export default function Insights() {
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Hi! I am your local financial analyst. I have access to your database via MCP. How can I help you today?' }
-  ]);
-  
+export default function Insights({ messages, setMessages, history, setHistory }) {
+    
   // This maintains the technical history (including tool calls/results) 
   // that the LLM needs, which is often different from what we display to the user.
   const [chatHistory, setChatHistory] = useState([]);
