@@ -58,3 +58,74 @@ Ensure Ollama is installed and running, then pull the recommended model:
 ```bash
 ollama run llama3.1
 ```
+
+### 2. Configure the MCP Backend
+
+Navigate to the `/api` folder and install the necessary Python dependencies:
+
+```bash
+pip install mcp fastmcp pandas
+```
+
+Start the MCP server to expose the database tools:
+
+```bash
+mcp run mcp_server.py
+```
+
+### 3. Launch the UI Dashboard
+
+Navigate to the root or UI directory, install dependencies, and start the React app:
+
+```bash
+npm install
+npm run dev
+```
+
+## 💬 Usage & Examples
+
+The **Senior Auditor** is trained to handle complex financial queries. You can interact with the chat interface using natural language:
+
+- **The Big Picture**  
+  *"What was my total net spending in 2025?"*  
+  → The agent triggers `get_net_spending_summary` for a mathematically verified total (**$10,872.88**).
+
+- **Vendor Specifics**  
+  *"How much did I spend at Amazon? Include any refunds."*
+
+- **Specific Entities**  
+  *"Find any expenses related to BGD Fresh Milk."*
+
+- **Reasoning Queries**  
+  *"Why is my total spending different from my bank balance?"*  
+  → The agent explains how internal credit card payments were filtered out to show true expenses.
+
+---
+
+## 🔧 Technical Details
+
+### MCP Tools Exposed
+
+- **`get_net_spending_summary`**  
+  High-accuracy SQL aggregation for yearly totals (database-level math).
+
+- **`search_spending`**  
+  Fuzzy-search tool for finding specific vendors or categories.
+
+- **`fetch_all_transactions_for_year`**  
+  Provides raw data context for detailed analysis and list views.
+
+---
+
+## 🗺️ Roadmap
+
+- [ ] Automated Ingestion: PDF and CSV drag-and-drop support for bank statements  
+- [ ] Advanced Categorization: Machine-learning based vendor normalization  
+- [ ] Data Visualization: AI-generated charts and spending trend heatmaps  
+
+---
+
+## ⚖️ License
+
+Distributed under the **MIT License**.  
+See the `LICENSE` file for more information.
