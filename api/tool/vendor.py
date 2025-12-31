@@ -2,7 +2,7 @@ import re
 import subprocess
 from db.db import get_connection
 
-MODEL_NAME = "mistral-small3.2:latest"
+MODEL_NAME = "granite3.3:2b"
 
 # =========================
 # Vendor cache operations

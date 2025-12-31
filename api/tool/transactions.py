@@ -8,7 +8,7 @@ from tool.vendor import normalize_vendor
 from db.db import get_connection
 from tool.logging_config import logger
 
-MODEL_NAME = "mistral-small3.2:latest"
+MODEL_NAME = "granite3.3:2b"
 
 def extract_transaction_lines(text: str) -> List[str]:
     """

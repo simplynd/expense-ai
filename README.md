@@ -12,7 +12,7 @@ This project goes beyond simple keyword tagging. It uses an **Agentic architectu
   Runs entirely on your machine via Ollama. Your financial data never leaves your local environment.
 
 - **Agentic Reasoning**  
-  Uses Llama 3.1 to interpret natural language and map it to specific SQL-backed tools.
+  Uses granite3.3:8b to interpret natural language and map it to specific SQL-backed tools.
 
 - **Accurate Arithmetic**  
   Solves the *LLM Math Problem* by offloading all summations and aggregations to the SQLite engine.
@@ -21,7 +21,7 @@ This project goes beyond simple keyword tagging. It uses an **Agentic architectu
   Automatically distinguishes between real spending and internal movements (payments/transfers).
 
 - **Vendor Name Normalization**  
-  Uses **mistral-small3.2** to intelligently normalize vendor names, consolidating variations into consistent, human-readable merchants.
+  Uses **granite3.3:2b** to intelligently normalize vendor names, consolidating variations into consistent, human-readable merchants.
 
 - **Persistent Context**  
   Maintains chat history across different dashboard views using React state lifting.
@@ -46,8 +46,8 @@ The project is built on a modular, multi-tier architecture designed for extensib
 
 - **Local LLM Runtime (Ollama)**  
   The local reasoning engine that processes user intent and orchestrates tool calls:
-  - **Llama 3.1** for agentic reasoning and financial analysis  
-  - **mistral-small3.2** for vendor name normalization and categorization
+  - **granite3.3:8b** for agentic reasoning and financial analysis 
+  - **granite3.3:2b** for quick vendor name normalization and categorization
 
 
 ## 🛠️ Prerequisites
@@ -67,8 +67,8 @@ The project is built on a modular, multi-tier architecture designed for extensib
 Ensure Ollama is installed and running, then pull the required models:
 
 ```bash
-ollama pull llama3.1
-ollama pull mistral-small3.2
+ollama pull granite3.3:8b
+ollama pull granite3.3:2b
 ```
 
 ### 2. Start the Backend Services (FastAPI + MCP)

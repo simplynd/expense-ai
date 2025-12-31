@@ -1,7 +1,7 @@
 import { mcpClient } from './mcpClient';
 
 const OLLAMA_URL = "http://127.0.0.1:11434/api/chat";
-const MODEL = "llama3.1:latest";
+const MODEL = "granite3.3:8b";
 
 const SYSTEM_PROMPT = `You are a Senior Financial Analyst. You have access to a user's transaction database through MCP tools.
 
