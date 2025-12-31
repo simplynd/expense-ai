@@ -124,6 +124,7 @@ Follow this standard process to move from raw financial documents to AI-powered 
 - **Normalization:** An LLM process automatically cleans messy bank strings into readable vendor names (e.g., AMZNMktpCA*B83MD becomes Amazon).  
 - **Storage:** Verified data is committed to your local SQLite database.
 
+[Statement Page](./data/images/Statement.png)
 ---
 
 ### Step 2: Review & Categorize
@@ -132,15 +133,17 @@ Follow this standard process to move from raw financial documents to AI-powered 
 - **Assignment:** Manually assign categories (Groceries, Transportation, etc.) to transactions.  
 - **Future AI:** Future iterations will include auto-categorization based on your historical mapping patterns.
 
+[Category Page](./data/images/Category.png)
 ---
 
-### Step 3: Manual Entry (Non-Statement Expenses)
+### Step 3: Adjunct Outlay (Manual Entry)
 
 - **Log expenses** that don't appear on credit card statements to ensure a complete financial picture.  
 - **Fixed Costs:** Manually enter recurring payments like Mortgage/Rent or Property Taxes.  
 - **Utilities:** Log direct-debit bills or e-transfers for electricity, water, or internet.  
 - **Cash Expenses:** Record out-of-pocket cash transactions to maintain 100% accuracy in your spending totals.
 
+[Adjunct Outlay](./data/images/Outlay.png)
 ---
 
 ### Step 4: Dashboard Visualization
@@ -151,6 +154,7 @@ View high-level financial health metrics on the main dashboard:
 - **Trends:** Monthly expense charts and category-based distribution.  
 - **Fixed vs. Variable:** Analyze the split between your manual fixed costs and credit card variable spending.
 
+[Dashboard](./data/images/Dashboard.png)
 ---
 
 ### Step 5: AI Insights (The Auditor)
@@ -163,6 +167,7 @@ Interact with the "Senior Auditor" chat interface. The LLM utilizes its MCP Tool
   - "How much have I paid in Mortgage and Utilities year-to-date?"  
   - "Show me a list of my Amazon purchases over $100."
 
+[AI Insight](./data/images/Insight.png)
 
 ## 🗺️ Roadmap
 
