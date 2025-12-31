@@ -20,57 +20,86 @@ This project goes beyond simple keyword tagging. It uses an **Agentic architectu
 - **Smart Filtering**  
   Automatically distinguishes between real spending and internal movements (payments/transfers).
 
+- **Vendor Name Normalization**  
+  Uses **mistral-small3.2** to intelligently normalize vendor names, consolidating variations into consistent, human-readable merchants.
+
 - **Persistent Context**  
   Maintains chat history across different dashboard views using React state lifting.
 
----
-
 ## 🏗️ System Architecture
 
-The project is built on a three-tier architecture designed for extensibility:
+The project is built on a modular, multi-tier architecture designed for extensibility and local-first execution:
 
 - **UI (React)**  
-  A modern dashboard for visualizing transactions and interacting with the AI Agent.
+  A modern dashboard for visualizing transactions, uploading bank statements (PDF/CSV), managing manual transactions, categorizing expenses, and interacting with the AI-powered *Senior Auditor*.
+
+- **Application API (Python / FastAPI)**  
+  A RESTful backend that supports UI-driven features such as:
+  - PDF bank statement uploads and parsing
+  - User-driven transaction categorization
+  - Manual transaction creation and editing
+  - Aggregated financial summaries for dashboard views  
+  This layer handles validation, persistence, and orchestration between the UI, database, and AI services.
 
 - **MCP Server (Python / FastMCP)**  
-  A bridge that exposes the SQLite database to the LLM via secure, high-performance tools.
+  A specialized service that securely exposes SQLite-backed financial data to the LLM via high-performance, deterministic tools—ensuring all calculations remain mathematically accurate.
 
-- **Local LLM (Ollama)**  
-  The reasoning engine (Llama 3.1 or Qwen 2.5) that processes user intent and orchestrates tool calls.
+- **Local LLM Runtime (Ollama)**  
+  The local reasoning engine that processes user intent and orchestrates tool calls:
+  - **Llama 3.1** for agentic reasoning and financial analysis  
+  - **mistral-small3.2** for vendor name normalization and categorization
 
----
 
 ## 🛠️ Prerequisites
 
 - **Ollama** — https://ollama.com  
 - **Node.js** — v18.0.0 or higher  
-- **Python** — 3.10+  
+- **Python** — 3.12+  
 - **Database** — SQLite (built-in)
+- **uv** — https://docs.astral.sh/uv/getting-started/installation/
 
 ---
 
 ## 🚀 Getting Started
 
-### 1. Setup the LLM
+### 1. Setup the Local LLMs
 
-Ensure Ollama is installed and running, then pull the recommended model:
+Ensure Ollama is installed and running, then pull the required models:
 
 ```bash
-ollama run llama3.1
+ollama pull llama3.1
+ollama pull mistral-small3.2
 ```
 
-### 2. Configure the MCP Backend
+### 2. Start the Backend Services (FastAPI + MCP)
 
-Navigate to the `/api` folder and install the necessary Python dependencies:
+This project uses uv for Python dependency management and service execution.
+
+Navigate to the api directory:
 
 ```bash
-pip install mcp fastmcp pandas
+cd api
 ```
 
-Start the MCP server to expose the database tools:
+Sync Dependencies
+Before starting any services, install/update all Python dependencies:
 
 ```bash
-mcp run mcp_server.py
+uv sync
+```
+
+Start the MCP Server
+Exposes SQLite-backed financial data to the LLM via MCP tools:
+
+```bash
+uv run python -m uvicorn mcp_server:app --host 127.0.0.1 --port 8001 --reload
+```
+
+Start the Application API (FastAPI)
+Supports UI-driven features such as PDF uploads, transaction categorization, manual transaction creation, and dashboard summaries:
+
+```bash
+uv run python -m uvicorn main:app --reload --log-level info
 ```
 
 ### 3. Launch the UI Dashboard
@@ -82,45 +111,63 @@ npm install
 npm run dev
 ```
 
-## 💬 Usage & Examples
+# 📖 Application Workflow
 
-The **Senior Auditor** is trained to handle complex financial queries. You can interact with the chat interface using natural language:
-
-- **The Big Picture**  
-  *"What was my total net spending in 2025?"*  
-  → The agent triggers `get_net_spending_summary` for a mathematically verified total (**$10,872.88**).
-
-- **Vendor Specifics**  
-  *"How much did I spend at Amazon? Include any refunds."*
-
-- **Specific Entities**  
-  *"Find any expenses related to BGD Fresh Milk."*
-
-- **Reasoning Queries**  
-  *"Why is my total spending different from my bank balance?"*  
-  → The agent explains how internal credit card payments were filtered out to show true expenses.
+Follow this standard process to move from raw financial documents to AI-powered insights:
 
 ---
 
-## 🔧 Technical Details
+### Step 1: Data Ingestion (PDF)
 
-### MCP Tools Exposed
-
-- **`get_net_spending_summary`**  
-  High-accuracy SQL aggregation for yearly totals (database-level math).
-
-- **`search_spending`**  
-  Fuzzy-search tool for finding specific vendors or categories.
-
-- **`fetch_all_transactions_for_year`**  
-  Provides raw data context for detailed analysis and list views.
+- **Upload:** Your text-based PDF credit card statements (OCR not currently supported).  
+- **Parsing:** The backend extracts clean transaction rows from the PDF noise.  
+- **Normalization:** An LLM process automatically cleans messy bank strings into readable vendor names (e.g., AMZNMktpCA*B83MD becomes Amazon).  
+- **Storage:** Verified data is committed to your local SQLite database.
 
 ---
+
+### Step 2: Review & Categorize
+
+- **Navigate:** Go to the transaction ledger to audit the imported data.  
+- **Assignment:** Manually assign categories (Groceries, Transportation, etc.) to transactions.  
+- **Future AI:** Future iterations will include auto-categorization based on your historical mapping patterns.
+
+---
+
+### Step 3: Manual Entry (Non-Statement Expenses)
+
+- **Log expenses** that don't appear on credit card statements to ensure a complete financial picture.  
+- **Fixed Costs:** Manually enter recurring payments like Mortgage/Rent or Property Taxes.  
+- **Utilities:** Log direct-debit bills or e-transfers for electricity, water, or internet.  
+- **Cash Expenses:** Record out-of-pocket cash transactions to maintain 100% accuracy in your spending totals.
+
+---
+
+### Step 4: Dashboard Visualization
+
+View high-level financial health metrics on the main dashboard:
+
+- **Aggregated Totals:** Yearly net spending and average monthly outflow.  
+- **Trends:** Monthly expense charts and category-based distribution.  
+- **Fixed vs. Variable:** Analyze the split between your manual fixed costs and credit card variable spending.
+
+---
+
+### Step 5: AI Insights (The Auditor)
+
+Interact with the "Senior Auditor" chat interface. The LLM utilizes its MCP Tools to query the database and perform verified analysis.
+
+- **Accuracy:** The agent offloads math to the database to ensure totals are 100% correct.  
+- **Example Queries:**  
+  - "What was my total spending for 2025 across all sources?"  
+  - "How much have I paid in Mortgage and Utilities year-to-date?"  
+  - "Show me a list of my Amazon purchases over $100."
+
 
 ## 🗺️ Roadmap
 
 - [ ] Automated Ingestion: PDF and CSV drag-and-drop support for bank statements  
-- [ ] Advanced Categorization: Machine-learning based vendor normalization  
+- [ ] Advanced Categorization: Machine-learning based vendor normalization and transactions categorization
 - [ ] Data Visualization: AI-generated charts and spending trend heatmaps  
 
 ---
