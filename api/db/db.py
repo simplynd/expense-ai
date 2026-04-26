@@ -134,6 +134,24 @@ def get_statements() -> List[Dict[str, Any]]:
     return [dict(row) for row in rows]
 
 
+def delete_statement(statement_id: int):
+    """
+    Deletes a statement and perfectly purges all associated transactions 
+    to prevent orphaned rows in the database.
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Explicitly delete child transactions first for safety
+    cur.execute("DELETE FROM transactions WHERE statement_id = ?", (statement_id,))
+    
+    # Delete the parent statement
+    cur.execute("DELETE FROM statements WHERE id = ?", (statement_id,))
+
+    conn.commit()
+    conn.close()
+
+
 # =========================
 # Transaction Operations
 # =========================
@@ -279,26 +297,12 @@ def update_manual_transaction(
     return transaction_id
 
 
-def delete_manual_transaction(transaction_id: int):
+def delete_transaction(transaction_id: int):
     """
-    Delete a manual transaction.
+    Delete any transaction from the database.
     """
     conn = get_connection()
     cur = conn.cursor()
-
-    row = cur.execute(
-        """
-        SELECT s.source_type
-        FROM transactions t
-        JOIN statements s ON t.statement_id = s.id
-        WHERE t.id = ?
-        """,
-        (transaction_id,),
-    ).fetchone()
-
-    if not row or row["source_type"] != "manual":
-        conn.close()
-        raise ValueError("Only manual transactions can be deleted")
 
     cur.execute(
         "DELETE FROM transactions WHERE id = ?",

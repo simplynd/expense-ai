@@ -10,14 +10,12 @@ export default function Categorization() {
     const [transactions, setTransactions] = useState([]);
     const [categories, setCategories] = useState([]);
 
-    // NEW Cascading Dropdown States
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
-    const [selectedType, setSelectedType] = useState('pdf'); // 'pdf' = Statement, 'manual' = Manual
+    const [selectedType, setSelectedType] = useState('pdf');
 
     const [selectedIds, setSelectedIds] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     
-    // UI Form States
     const [newCategoryName, setNewCategoryName] = useState("");
     const [cleanVendorName, setCleanVendorName] = useState("");
     const [selectedCategoryName, setSelectedCategoryName] = useState(""); 
@@ -55,13 +53,11 @@ export default function Categorization() {
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
-    // NEW: Filter statements based on Year and Type
     const filteredStatements = statements.filter(s => 
         s.source_type === selectedType && 
         s.filename.includes(selectedYear)
     );
 
-    // NEW: Auto-select logic when dropdowns change
     useEffect(() => {
         if (filteredStatements.length > 0) {
             const currentStillValid = filteredStatements.find(s => s.id === selectedStatementId);
@@ -141,6 +137,30 @@ export default function Categorization() {
         }
     };
 
+    // NEW: Bulk Delete Handler
+    const handleDeleteSelected = async () => {
+        if (selectedIds.length === 0) return;
+        if (!window.confirm(`Are you sure you want to permanently delete ${selectedIds.length} transaction(s)?`)) return;
+
+        try {
+            // Delete sequentially to avoid overwhelming SQLite
+            for (const id of selectedIds) {
+                await transactionService.deleteTransaction(id);
+            }
+            
+            // Instantly remove them from the UI table
+            setTransactions(prev => prev.filter(t => !selectedIds.includes(t.id)));
+            
+            // Reset form
+            setSelectedIds([]);
+            setCleanVendorName("");
+            setSelectedCategoryName("");
+        } catch (err) {
+            console.error(err);
+            alert("Error deleting transactions.");
+        }
+    };
+
     return (
         <div className="max-w-7xl mx-auto space-y-6 pb-20">
             <div className="flex justify-between items-center">
@@ -149,11 +169,9 @@ export default function Categorization() {
                     <p className="text-sm text-gray-500 font-medium">Clean up missing vendors and batch-assign categories.</p>
                 </div>
                 
-                {/* UPDATED: Cascading Dropdowns */}
                 <div className="flex items-center bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
                     <Filter size={16} className="ml-2 mr-1 text-gray-400 shrink-0" />
                     
-                    {/* Dropdown 1: Year */}
                     <select
                         className="bg-transparent border-none text-sm font-bold text-gray-700 focus:ring-0 cursor-pointer border-r border-gray-100 pr-2 pl-2"
                         value={selectedYear}
@@ -164,7 +182,6 @@ export default function Categorization() {
                         ))}
                     </select>
 
-                    {/* Dropdown 2: Type */}
                     <select
                         className="bg-transparent border-none text-sm font-bold text-gray-700 focus:ring-0 cursor-pointer border-r border-gray-100 pr-2 pl-2"
                         value={selectedType}
@@ -174,7 +191,6 @@ export default function Categorization() {
                         <option value="manual">Manual</option>
                     </select>
 
-                    {/* Dropdown 3: File / Bucket */}
                     <select
                         className="bg-transparent border-none text-sm font-bold text-gray-700 focus:ring-0 cursor-pointer pl-2 max-w-[200px] truncate"
                         value={selectedStatementId || ""}
@@ -202,7 +218,8 @@ export default function Categorization() {
                         selectedCategoryName={selectedCategoryName}       
                         setSelectedCategoryName={setSelectedCategoryName} 
                         onCreateCategory={handleCreateCategory}           
-                        onApply={handleApplyChanges}                      
+                        onApply={handleApplyChanges}   
+                        onDelete={handleDeleteSelected} // NEW prop
                     />
                 </div>
                 <div className="lg:col-span-9">

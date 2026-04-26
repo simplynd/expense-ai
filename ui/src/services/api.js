@@ -49,6 +49,12 @@ export const statementService = {
     return response.data;
   },
 
+  // NEW: Delete a statement and its transactions
+  deleteStatement: async (id) => {
+    const response = await apiClient.delete(`/statements/${id}`);
+    return response.data;
+  },
+
 };
 
 // --- ADDED THIS SECTION ---

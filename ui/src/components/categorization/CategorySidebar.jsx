@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tag, ChevronRight, Plus, Edit3, CheckCircle2 } from 'lucide-react';
+import { Tag, ChevronRight, Plus, Edit3, CheckCircle2, Trash2 } from 'lucide-react';
 
 export default function CategorySidebar({ 
   categories, 
@@ -11,12 +11,12 @@ export default function CategorySidebar({
   selectedCategoryName,
   setSelectedCategoryName,
   onCreateCategory,
-  onApply
+  onApply,
+  onDelete
 }) {
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden sticky top-8 flex flex-col max-h-[85vh]">
       
-      {/* 1. Vendor Normalization Input */}
       <div className="p-5 border-b border-gray-50 bg-blue-50/30">
         <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-2">
           <Edit3 size={14} /> 1. Clean Vendor Name
@@ -33,7 +33,6 @@ export default function CategorySidebar({
         )}
       </div>
 
-      {/* 2. Category Selection List */}
       <div className="p-5 border-b border-gray-50 bg-gray-50/50 flex items-center justify-between shrink-0">
         <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">2. Select Category</h3>
         <Tag size={14} className="text-gray-400" />
@@ -64,7 +63,6 @@ export default function CategorySidebar({
         })}
       </div>
 
-      {/* 3. Create Custom Category */}
       <div className="p-4 bg-gray-50/80 border-t border-gray-100 shrink-0">
         <div className="flex gap-2">
           <input 
@@ -88,8 +86,7 @@ export default function CategorySidebar({
         </div>
       </div>
 
-      {/* 4. Submission Button */}
-      <div className="p-5 bg-white border-t border-gray-100 shrink-0">
+      <div className="p-5 bg-white border-t border-gray-100 shrink-0 space-y-3">
         <button
           onClick={onApply}
           disabled={selectedCount === 0 || !cleanVendorName || !selectedCategoryName}
@@ -97,6 +94,16 @@ export default function CategorySidebar({
         >
           <CheckCircle2 size={16} />
           Apply & Save Rule
+        </button>
+        
+        {/* NEW: Bulk Delete Button */}
+        <button
+          onClick={onDelete}
+          disabled={selectedCount === 0}
+          className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-100 focus:ring-4 focus:ring-red-500/20 disabled:opacity-40 disabled:hover:bg-red-50 transition-all"
+        >
+          <Trash2 size={16} />
+          Delete Selected
         </button>
       </div>
       

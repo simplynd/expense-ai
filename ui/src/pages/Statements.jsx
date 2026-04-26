@@ -126,6 +126,27 @@ export default function Statements() {
     }
   };
 
+  // NEW: Handle Statement Deletion
+  const handleDeleteStatement = async (id) => {
+    if (!window.confirm("Are you sure you want to permanently delete this statement and ALL of its transactions? This action cannot be undone.")) return;
+    
+    try {
+      await statementService.deleteStatement(id);
+      
+      // Instantly remove it from the UI list
+      setStatements(prev => prev.filter(s => s.id !== id));
+      
+      // If the user was currently viewing the deleted statement, clear the view
+      if (selectedStatement?.id === id) {
+        setSelectedStatement(null);
+        setTransactions([]);
+      }
+    } catch (err) {
+      console.error("Failed to delete statement:", err);
+      alert("Error deleting statement from the database.");
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-20">
       {/* Top Section: Upload Box */}
@@ -150,6 +171,7 @@ export default function Statements() {
         onSaveEdit={handleSaveEdit}
         onCancelEdit={() => setEditingId(null)}
         pollCount={pollCount}
+        onDelete={handleDeleteStatement}
       />
 
       {/* Bottom Section: Transactions within the selected file */}

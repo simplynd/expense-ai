@@ -9,7 +9,7 @@ from db.db import (
     get_or_create_category,
     insert_manual_transaction,
     update_manual_transaction,
-    delete_manual_transaction,
+    delete_transaction,
     is_manual_transaction,
     get_transaction_by_id,
     get_unnormalized_transactions,
@@ -163,7 +163,9 @@ def update_manual_transaction_endpoint(transaction_id: int, payload: ManualTrans
     return TransactionOut(**tx)
 
 @router.delete("/{transaction_id}", status_code=204)
-def delete_manual_transaction_endpoint(transaction_id: int):
-    if not is_manual_transaction(transaction_id):
-        raise HTTPException(status_code=403, detail="Only transactions from manual statements can be deleted")
-    delete_manual_transaction(transaction_id)
+def delete_transaction_endpoint(transaction_id: int):
+    """
+    Delete a transaction from the database.
+    """
+    # Simply call the delete function without the manual source_type check
+    delete_transaction(transaction_id)

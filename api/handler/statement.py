@@ -12,6 +12,7 @@ from db.db import (
     get_statements,
     get_transactions_for_statement,
     insert_transactions,
+    delete_statement,
     update_statement_filename,  # ✅ new import
 )
 from tool.pdf import extract_text_from_pdf
@@ -212,3 +213,13 @@ def create_manual_statement_endpoint(
 
     stmt["transactions"] = []
     return StatementOut(**stmt)
+
+@router.delete("/{statement_id}", status_code=204)
+def delete_statement_endpoint(statement_id: int):
+    """
+    Permanently delete a statement and all its transactions.
+    """
+    try:
+        delete_statement(statement_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete statement: {str(e)}")
