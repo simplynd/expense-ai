@@ -20,3 +20,8 @@ Given a single transaction line, extract the following fields:
 3. Use your semantic reasoning to identify if the transaction matches any of the known rules, completely ignoring the random hashes/locations.
 4. If it matches, output the exact `vendor_normalized` and `category` from the rule.
 5. If it is a completely unknown vendor, set BOTH `vendor_normalized` and `category` to `null`.
+
+**CRITICAL RULES FOR AMOUNT EXTRACTION:**
+1. The transaction amount is ALWAYS the very last number at the extreme end of the line (e.g., `30.00` or `139.00`).
+2. IGNORE bank-assigned spend categories (e.g., "Retail and Grocery", "Professional and Financial Services") that appear right before the amount. Do NOT include them in the vendor name, and do not let them confuse the amount extraction. 
+3. NEVER output 0 or 0.00 unless the raw text explicitly states the amount is exactly $0.00.
