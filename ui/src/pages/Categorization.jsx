@@ -10,22 +10,24 @@ export default function Categorization() {
     const [transactions, setTransactions] = useState([]);
     const [categories, setCategories] = useState([]);
 
+    // NEW Cascading Dropdown States
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+    const [selectedType, setSelectedType] = useState('pdf'); // 'pdf' = Statement, 'manual' = Manual
+
     const [selectedIds, setSelectedIds] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     
     // UI Form States
     const [newCategoryName, setNewCategoryName] = useState("");
     const [cleanVendorName, setCleanVendorName] = useState("");
-    const [selectedCategoryName, setSelectedCategoryName] = useState(""); // NEW: Holds selection before saving
+    const [selectedCategoryName, setSelectedCategoryName] = useState(""); 
     
     const [loading, setLoading] = useState(true);
 
-    // Clear selections whenever the user types in the search box
     useEffect(() => {
         setSelectedIds([]);
     }, [searchTerm]);
 
-    // Auto-fill vendor name AND select existing category when user checks a box
     useEffect(() => {
         if (selectedIds.length > 0) {
             const firstTx = transactions.find(t => t.id === selectedIds[0]);
@@ -47,15 +49,31 @@ export default function Categorization() {
             ]);
             setStatements(stmtRes.data || []);
             setCategories((catRes || []).sort((a, b) => a.name.localeCompare(b.name)));
-
-            if (stmtRes.data?.length > 0 && !selectedStatementId) {
-                handleStatementChange(stmtRes.data[0].id);
-            }
         } catch (err) { console.error(err); }
         finally { setLoading(false); }
-    }, [selectedStatementId]);
+    }, []);
 
     useEffect(() => { fetchData(); }, [fetchData]);
+
+    // NEW: Filter statements based on Year and Type
+    const filteredStatements = statements.filter(s => 
+        s.source_type === selectedType && 
+        s.filename.includes(selectedYear)
+    );
+
+    // NEW: Auto-select logic when dropdowns change
+    useEffect(() => {
+        if (filteredStatements.length > 0) {
+            const currentStillValid = filteredStatements.find(s => s.id === selectedStatementId);
+            if (!currentStillValid) {
+                handleStatementChange(filteredStatements[0].id);
+            }
+        } else {
+            setSelectedStatementId(null);
+            setTransactions([]);
+            setSelectedIds([]);
+        }
+    }, [selectedYear, selectedType, statements]);
 
     const handleStatementChange = async (id) => {
         setSelectedStatementId(id);
@@ -73,12 +91,10 @@ export default function Categorization() {
         (t.vendor_raw?.toLowerCase() || "").includes(searchTerm.toLowerCase())
     );
 
-    // ACTION 1: Only creates the category and selects it (No assigning)
     const handleCreateCategory = async () => {
         if (!newCategoryName.trim()) return;
         try {
             const newCat = await transactionService.createCategory(newCategoryName.trim());
-            // Update category list and immediately select the new one
             setCategories(prev => [...prev, newCat].sort((a, b) => a.name.localeCompare(b.name)));
             setSelectedCategoryName(newCat.name);
             setNewCategoryName("");
@@ -88,7 +104,6 @@ export default function Categorization() {
         }
     };
 
-    // ACTION 2: Actually applies the changes to the database
     const handleApplyChanges = async () => {
         if (selectedIds.length === 0) return;
         
@@ -98,30 +113,25 @@ export default function Categorization() {
         }
 
         try {
-            // Find the ID of the selected category
             let catId = categories.find(c => c.name.toLowerCase() === selectedCategoryName.toLowerCase())?.id;
             
-            // Failsafe in case a category was typed but not "created" via the plus button
             if (!catId) {
                 const newCat = await transactionService.createCategory(selectedCategoryName);
                 catId = newCat.id;
             }
 
-            // Call backend normalization endpoint
             await transactionService.batchNormalize({
                 transaction_ids: selectedIds,
                 normalized_vendor: cleanVendorName,
                 category_id: catId
             });
 
-            // Instantly update UI table
             setTransactions(prev => prev.map(t => 
                 selectedIds.includes(t.id) 
                 ? { ...t, category: selectedCategoryName, vendor_normalized: cleanVendorName } 
                 : t
             ));
 
-            // Reset form
             setSelectedIds([]);
             setCleanVendorName("");
             setSelectedCategoryName("");
@@ -138,14 +148,44 @@ export default function Categorization() {
                     <h2 className="text-2xl font-black text-gray-800 tracking-tight">Statement Triage</h2>
                     <p className="text-sm text-gray-500 font-medium">Clean up missing vendors and batch-assign categories.</p>
                 </div>
-                <div className="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
-                    <Filter size={16} className="ml-2 text-gray-400" />
+                
+                {/* UPDATED: Cascading Dropdowns */}
+                <div className="flex items-center bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
+                    <Filter size={16} className="ml-2 mr-1 text-gray-400 shrink-0" />
+                    
+                    {/* Dropdown 1: Year */}
                     <select
-                        className="bg-transparent border-none text-sm font-bold text-gray-700 focus:ring-0 cursor-pointer"
+                        className="bg-transparent border-none text-sm font-bold text-gray-700 focus:ring-0 cursor-pointer border-r border-gray-100 pr-2 pl-2"
+                        value={selectedYear}
+                        onChange={(e) => setSelectedYear(e.target.value)}
+                    >
+                        {['2023', '2024', '2025', '2026'].map(y => (
+                            <option key={y} value={y}>{y}</option>
+                        ))}
+                    </select>
+
+                    {/* Dropdown 2: Type */}
+                    <select
+                        className="bg-transparent border-none text-sm font-bold text-gray-700 focus:ring-0 cursor-pointer border-r border-gray-100 pr-2 pl-2"
+                        value={selectedType}
+                        onChange={(e) => setSelectedType(e.target.value)}
+                    >
+                        <option value="pdf">Statements</option>
+                        <option value="manual">Manual</option>
+                    </select>
+
+                    {/* Dropdown 3: File / Bucket */}
+                    <select
+                        className="bg-transparent border-none text-sm font-bold text-gray-700 focus:ring-0 cursor-pointer pl-2 max-w-[200px] truncate"
                         value={selectedStatementId || ""}
                         onChange={(e) => handleStatementChange(e.target.value)}
+                        disabled={filteredStatements.length === 0}
                     >
-                        {statements.map(s => <option key={s.id} value={s.id}>{s.filename}</option>)}
+                        {filteredStatements.length > 0 ? (
+                            filteredStatements.map(s => <option key={s.id} value={s.id}>{s.filename}</option>)
+                        ) : (
+                            <option value="">No files found</option>
+                        )}
                     </select>
                 </div>
             </div>
@@ -159,10 +199,10 @@ export default function Categorization() {
                         setNewCatName={setNewCategoryName}
                         cleanVendorName={cleanVendorName}           
                         setCleanVendorName={setCleanVendorName}     
-                        selectedCategoryName={selectedCategoryName}       // NEW
-                        setSelectedCategoryName={setSelectedCategoryName} // NEW
-                        onCreateCategory={handleCreateCategory}           // NEW
-                        onApply={handleApplyChanges}                      // NEW
+                        selectedCategoryName={selectedCategoryName}       
+                        setSelectedCategoryName={setSelectedCategoryName} 
+                        onCreateCategory={handleCreateCategory}           
+                        onApply={handleApplyChanges}                      
                     />
                 </div>
                 <div className="lg:col-span-9">

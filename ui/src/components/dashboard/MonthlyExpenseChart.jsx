@@ -21,7 +21,7 @@ export default function MonthlyExpenseChart({ data, onMonthSelect, selectedMonth
             value={selectedYear}
             onChange={(e) => onYearSelect(parseInt(e.target.value))}
           >
-            {[2024, 2025, 2026].map(year => (
+            {[2022, 2023, 2024, 2025, 2026].map(year => (
               <option key={year} value={year}>{year}</option>
             ))}
           </select>
