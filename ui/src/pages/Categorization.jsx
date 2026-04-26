@@ -12,17 +12,32 @@ export default function Categorization() {
 
     const [selectedIds, setSelectedIds] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
+    
+    // UI Form States
     const [newCategoryName, setNewCategoryName] = useState("");
+    const [cleanVendorName, setCleanVendorName] = useState("");
+    const [selectedCategoryName, setSelectedCategoryName] = useState(""); // NEW: Holds selection before saving
+    
     const [loading, setLoading] = useState(true);
 
-    // ... inside your Categorization component
-
-    // ADD THIS: Clear selections whenever the user types in the search box
+    // Clear selections whenever the user types in the search box
     useEffect(() => {
         setSelectedIds([]);
     }, [searchTerm]);
 
-    // ... rest of your component
+    // Auto-fill vendor name AND select existing category when user checks a box
+    useEffect(() => {
+        if (selectedIds.length > 0) {
+            const firstTx = transactions.find(t => t.id === selectedIds[0]);
+            if (firstTx) {
+                setCleanVendorName(firstTx.vendor_normalized || firstTx.vendor_raw || "");
+                setSelectedCategoryName(firstTx.category || "");
+            }
+        } else {
+            setCleanVendorName("");
+            setSelectedCategoryName("");
+        }
+    }, [selectedIds, transactions]);
 
     const fetchData = useCallback(async () => {
         try {
@@ -54,27 +69,74 @@ export default function Categorization() {
     };
 
     const filteredTransactions = transactions.filter(t =>
-        (t.vendor_normalized || t.vendor_raw || "").toLowerCase().includes(searchTerm.toLowerCase())
+        (t.vendor_normalized?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+        (t.vendor_raw?.toLowerCase() || "").includes(searchTerm.toLowerCase())
     );
 
-    const handleBulkAssign = async (catName) => {
-        const name = catName || newCategoryName;
-        if (selectedIds.length === 0 || !name) return;
+    // ACTION 1: Only creates the category and selects it (No assigning)
+    const handleCreateCategory = async () => {
+        if (!newCategoryName.trim()) return;
         try {
-            await transactionService.assignCategory({ transaction_ids: selectedIds, category_name: name });
-            setTransactions(prev => prev.map(t => selectedIds.includes(t.id) ? { ...t, category: name } : t));
-            if (!categories.find(c => c.name.toLowerCase() === name.toLowerCase())) fetchData();
-            setSelectedIds([]);
+            const newCat = await transactionService.createCategory(newCategoryName.trim());
+            // Update category list and immediately select the new one
+            setCategories(prev => [...prev, newCat].sort((a, b) => a.name.localeCompare(b.name)));
+            setSelectedCategoryName(newCat.name);
             setNewCategoryName("");
-        } catch (err) { alert("Error assigning category"); }
+        } catch (err) {
+            console.error(err);
+            alert("Failed to create category");
+        }
+    };
+
+    // ACTION 2: Actually applies the changes to the database
+    const handleApplyChanges = async () => {
+        if (selectedIds.length === 0) return;
+        
+        if (!cleanVendorName || !selectedCategoryName) {
+            alert("Please provide both a Clean Vendor Name and select a Category before applying.");
+            return;
+        }
+
+        try {
+            // Find the ID of the selected category
+            let catId = categories.find(c => c.name.toLowerCase() === selectedCategoryName.toLowerCase())?.id;
+            
+            // Failsafe in case a category was typed but not "created" via the plus button
+            if (!catId) {
+                const newCat = await transactionService.createCategory(selectedCategoryName);
+                catId = newCat.id;
+            }
+
+            // Call backend normalization endpoint
+            await transactionService.batchNormalize({
+                transaction_ids: selectedIds,
+                normalized_vendor: cleanVendorName,
+                category_id: catId
+            });
+
+            // Instantly update UI table
+            setTransactions(prev => prev.map(t => 
+                selectedIds.includes(t.id) 
+                ? { ...t, category: selectedCategoryName, vendor_normalized: cleanVendorName } 
+                : t
+            ));
+
+            // Reset form
+            setSelectedIds([]);
+            setCleanVendorName("");
+            setSelectedCategoryName("");
+        } catch (err) { 
+            console.error(err);
+            alert("Error assigning category and normalizing vendor."); 
+        }
     };
 
     return (
         <div className="max-w-7xl mx-auto space-y-6 pb-20">
             <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-2xl font-black text-gray-800 tracking-tight">Bulk Categorization</h2>
-                    <p className="text-sm text-gray-500 font-medium">Select a statement and batch-assign categories.</p>
+                    <h2 className="text-2xl font-black text-gray-800 tracking-tight">Statement Triage</h2>
+                    <p className="text-sm text-gray-500 font-medium">Clean up missing vendors and batch-assign categories.</p>
                 </div>
                 <div className="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
                     <Filter size={16} className="ml-2 text-gray-400" />
@@ -92,10 +154,15 @@ export default function Categorization() {
                 <div className="lg:col-span-3">
                     <CategorySidebar
                         categories={categories}
-                        onAssign={handleBulkAssign}
                         selectedCount={selectedIds.length}
                         newCatName={newCategoryName}
                         setNewCatName={setNewCategoryName}
+                        cleanVendorName={cleanVendorName}           
+                        setCleanVendorName={setCleanVendorName}     
+                        selectedCategoryName={selectedCategoryName}       // NEW
+                        setSelectedCategoryName={setSelectedCategoryName} // NEW
+                        onCreateCategory={handleCreateCategory}           // NEW
+                        onApply={handleApplyChanges}                      // NEW
                     />
                 </div>
                 <div className="lg:col-span-9">

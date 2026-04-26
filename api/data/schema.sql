@@ -55,12 +55,6 @@ CREATE TABLE IF NOT EXISTS transactions (
     FOREIGN KEY (category_id) REFERENCES categories(id)
 );
 
--- Vendor cache table
-CREATE TABLE IF NOT EXISTS vendor_cache (
-    raw_vendor TEXT PRIMARY KEY,
-    normalized_vendor TEXT NOT NULL
-);
-
 CREATE INDEX IF NOT EXISTS idx_transactions_statement
 ON transactions(statement_id);
 
@@ -72,3 +66,19 @@ ON transactions(category_id);
 
 CREATE INDEX IF NOT EXISTS idx_transactions_vendor_norm
 ON transactions(vendor_normalized);
+
+-- =========================
+-- Vendor Mapping (Rules Engine)
+-- =========================
+CREATE TABLE IF NOT EXISTS vendor_mapping (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    raw_vendor TEXT UNIQUE NOT NULL,
+    normalized_vendor TEXT NOT NULL,
+    category_id INTEGER,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY(category_id) REFERENCES categories(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_vendor_mapping_raw
+ON vendor_mapping(raw_vendor);

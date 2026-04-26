@@ -5,7 +5,7 @@ const numToMonth = (num) => {
   return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][num - 1];
 };
 
-export function useDashboard(selectedMonth) {
+export function useDashboard(selectedYear, selectedMonth) {
   const [summary, setSummary] = useState(null);
   const [chartData, setChartData] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -16,30 +16,27 @@ export function useDashboard(selectedMonth) {
     async function loadDashboard() {
       try {
         setLoading(true);
-        const data = await dashboardService.getSummary(2025);
+        const data = await dashboardService.getSummary(selectedYear); // Using dynamic year
         
-        // 1. Create a full 12-month skeleton with 0 expenses
         const fullYear = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => ({
           month: numToMonth(m),
           amount: 0
         }));
 
-        // 2. Overwrite the months we actually have data for
         data.monthly_expenses.forEach(item => {
           const index = item.month - 1;
           fullYear[index].amount = item.expense;
         });
         setChartData(fullYear);
 
-        // 3. Find the highest amount from the API data
         const highestItem = data.monthly_expenses.find(m => m.month === data.highest_expense_month);
         const highestAmount = highestItem ? highestItem.expense : 0;
 
         setSummary({
           total_expense: data.total_expense,
           highest_expense_month: numToMonth(data.highest_expense_month),
-          highest_expense_amount: highestAmount, // Set the real amount here
-          average_monthly_spend: data.total_expense / 12 // Simple average over year
+          highest_expense_amount: highestAmount,
+          average_monthly_spend: data.total_expense / 12
         });
 
       } catch (err) {
@@ -49,20 +46,20 @@ export function useDashboard(selectedMonth) {
       }
     }
     loadDashboard();
-  }, []);
+  }, [selectedYear]); // Re-run when year changes
 
   useEffect(() => {
     async function fetchTable() {
       if (!selectedMonth) return;
       try {
-        const data = await dashboardService.getTransactionsByMonth(2025, selectedMonth);
+        const data = await dashboardService.getTransactionsByMonth(selectedYear, selectedMonth); // Using dynamic year
         setTransactions(data);
       } catch (err) {
-        console.error("Table fetch failed", err);
+        setTransactions([]);
       }
     }
     fetchTable();
-  }, [selectedMonth]);
+  }, [selectedYear, selectedMonth]); // Re-run when year or month changes
 
   return { summary, chartData, transactions, loading, error };
 }

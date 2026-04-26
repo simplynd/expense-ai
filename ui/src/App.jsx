@@ -79,18 +79,6 @@ function App() {
             <span className="font-medium">Statements</span>
           </button>
 
-          {/* 3. NEW ADJUNCT OUTLAYS BUTTON */}
-          <button
-            onClick={() => setActivePage('adjunct')}
-            className={`w-full p-3.5 rounded-xl flex items-center gap-3 transition-all duration-200 ${activePage === 'adjunct'
-              ? 'bg-emerald-600 text-white shadow-lg'
-              : 'text-gray-400 hover:text-white hover:bg-white/5'
-              }`}
-          >
-            <PlusCircle size={20} />
-            <span className="font-medium">Adjunct Outlays</span>
-          </button>
-
           <button
             onClick={() => setActivePage('categorization')}
             className={`w-full p-3.5 rounded-xl flex items-center gap-3 transition-all duration-200 ${activePage === 'categorization'
@@ -100,6 +88,17 @@ function App() {
           >
             <Lightbulb size={20} />
             <span className="font-medium">Categorization</span>
+          </button>
+
+          <button
+            onClick={() => setActivePage('adjunct')}
+            className={`w-full p-3.5 rounded-xl flex items-center gap-3 transition-all duration-200 ${activePage === 'adjunct'
+              ? 'bg-emerald-600 text-white shadow-lg'
+              : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
+          >
+            <PlusCircle size={20} />
+            <span className="font-medium">Adjunct Outlays</span>
           </button>
 
           <button

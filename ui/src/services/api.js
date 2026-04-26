@@ -83,6 +83,18 @@ export const transactionService = {
     const response = await apiClient.delete(`/transactions/${id}`);
     return response.data;
   },
+
+  // NEW: Directly create a category to get its ID
+  createCategory: async (name) => {
+    const response = await apiClient.post(`/transactions/categories?name=${encodeURIComponent(name)}`);
+    return response.data;
+  },
+
+  // NEW: Batch normalize and categorize
+  batchNormalize: async (payload) => {
+    const response = await apiClient.post('/transactions/review/normalize', payload);
+    return response.data;
+  },
   
 };
 // ---------------------------

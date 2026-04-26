@@ -153,16 +153,18 @@ def insert_transactions(
                 transaction_date,
                 vendor_raw,
                 vendor_normalized,
-                amount
+                amount,
+                category_id
             )
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
             (
                 statement_id,
                 tx["date"],
                 tx["vendor_raw"],
-                tx.get("vendor"),
+                tx.get("vendor_normalized"),
                 tx["amount"],
+                tx.get("category_id")
             ),
         )
 
@@ -193,10 +195,6 @@ def insert_manual_transaction(
     if not stmt or stmt["source_type"] != "manual":
         conn.close()
         raise ValueError("Manual transactions must belong to a manual statement")
-
-    # category_id = None
-    # if category_name:
-    #     category_id = get_or_create_category(category_name)
 
     cur.execute(
         """
@@ -338,8 +336,10 @@ def get_transactions_for_statement_exclude_payment(
         FROM transactions t
         LEFT JOIN categories c ON t.category_id = c.id
         WHERE t.statement_id = ? 
-            AND t.vendor_normalized NOT LIKE '%payment%'
-            AND t.vendor_raw NOT LIKE '%payment%'   
+            AND t.vendor_raw NOT LIKE '%PAYMENT%'
+            AND t.vendor_raw NOT LIKE '%TRANSFER%'
+            AND t.vendor_raw NOT LIKE '%CREDIT CARD%'
+            AND (t.vendor_normalized IS NULL OR t.vendor_normalized NOT LIKE '%PAYMENT%')
         ORDER BY t.transaction_date
         """,
         (statement_id,),
@@ -440,11 +440,82 @@ def get_categories() -> List[Dict[str, Any]]:
     conn.close()
     return [dict(row) for row in rows]
 
+# =========================
+# Vendor Mapping Operations
+# =========================
+
+def get_vendor_mappings() -> List[Dict[str, Any]]:
+    """Fetch all established vendor normalization rules."""
+    conn = get_connection()
+    rows = conn.execute("SELECT * FROM vendor_mapping").fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def add_vendor_mapping(raw_vendor: str, normalized_vendor: str, category_id: Optional[int] = None):
+    """Save a user's manual mapping into the rulebook."""
+    conn = get_connection()
+    conn.execute(
+        """
+        INSERT INTO vendor_mapping (raw_vendor, normalized_vendor, category_id)
+        VALUES (?, ?, ?)
+        ON CONFLICT(raw_vendor) DO UPDATE SET 
+            normalized_vendor=excluded.normalized_vendor,
+            category_id=excluded.category_id
+        """,
+        (raw_vendor, normalized_vendor, category_id)
+    )
+    conn.commit()
+    conn.close()
+
+def get_unnormalized_transactions() -> List[Dict[str, Any]]:
+    """Fetch all transactions that the system couldn't confidently normalize."""
+    conn = get_connection()
+    rows = conn.execute(
+        """
+        SELECT t.*, s.filename as statement_filename
+        FROM transactions t
+        JOIN statements s ON t.statement_id = s.id
+        WHERE t.vendor_normalized IS NULL
+        ORDER BY t.transaction_date DESC
+        """
+    ).fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def apply_normalization_to_transactions(transaction_ids: List[int], normalized_vendor: str, category_id: Optional[int]):
+    """Update a batch of transactions with the user's manual inputs and save the rule."""
+    conn = get_connection()
+    
+    # 1. Update the transactions
+    query = f"""
+        UPDATE transactions
+        SET vendor_normalized = ? {', category_id = ?' if category_id else ''}
+        WHERE id IN ({','.join('?' * len(transaction_ids))})
+    """
+    
+    params = [normalized_vendor]
+    if category_id:
+        params.append(category_id)
+    params.extend(transaction_ids)
+    
+    conn.execute(query, params)
+    
+    # 2. Extract the raw vendors for these exact transactions to build mapping rules
+    rows = conn.execute(
+        f"SELECT DISTINCT vendor_raw FROM transactions WHERE id IN ({','.join('?' * len(transaction_ids))})",
+        transaction_ids
+    ).fetchall()
+    
+    conn.commit()
+    conn.close()
+    
+    # 3. Save mapping rules for future fuzzy matching
+    for row in rows:
+        add_vendor_mapping(row["vendor_raw"], normalized_vendor, category_id)
 
 # =========================
 # MCP Operations
 # =========================
-
 
 def get_yearly_transactions(year: int):
     """Fetches all transactions for a specific year including category names."""

@@ -11,7 +11,7 @@ export default function TransactionTriageTable({
   onSelectAll 
 }) {
   
-  // Fix for Bug 1: Calculate if "Select All" should be checked
+  // Calculate if "Select All" should be checked
   // It's checked only if there are transactions and EVERY filtered transaction is in selectedIds
   const isAllSelected = transactions.length > 0 && transactions.every(t => selectedIds.includes(t.id));
 
@@ -42,7 +42,7 @@ export default function TransactionTriageTable({
                 <input 
                   type="checkbox" 
                   className="rounded border-gray-300 text-blue-600 cursor-pointer"
-                  checked={isAllSelected} // Controlled: depends on data
+                  checked={isAllSelected}
                   onChange={(e) => onSelectAll(e.target.checked)}
                 />
               </th>
@@ -62,20 +62,36 @@ export default function TransactionTriageTable({
                   onClick={() => onToggleSelect(t.id)}
                 >
                   <td className="px-6 py-5 text-center">
-                    {/* Fix for Bug 2: checkbox now correctly toggles via the row click logic */}
                     <input 
                       type="checkbox" 
                       className="rounded border-gray-300 text-blue-600 cursor-pointer" 
                       checked={selectedIds.includes(t.id)}
-                      // stopPropagation prevents the click from firing twice (once for input, once for row)
                       onClick={(e) => e.stopPropagation()} 
                       onChange={() => onToggleSelect(t.id)}
                     />
                   </td>
                   <td className="px-6 py-5">
                     <div className="flex flex-col">
-                      <span className="font-bold text-gray-800">{t.vendor_raw || t.vendor_normalized}</span>
-                      <span className="text-[10px] text-gray-400 font-black uppercase tracking-wider">{t.transaction_date}</span>
+                      {/* NEW: Visual flag for unnormalized vendors */}
+                      {t.vendor_normalized ? (
+                        <span className="font-bold text-gray-800">{t.vendor_normalized}</span>
+                      ) : (
+                        <span className="font-bold text-red-500 flex items-center gap-2">
+                          {t.vendor_raw} 
+                          <span className="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded uppercase tracking-wider font-black whitespace-nowrap">Needs Review</span>
+                        </span>
+                      )}
+                      
+                      {/* Maintain the date and show the raw vendor string for context */}
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] text-gray-400 font-black uppercase tracking-wider whitespace-nowrap">
+                          {t.transaction_date}
+                        </span>
+                        <span className="text-[10px] text-gray-300">•</span>
+                        <span className="text-[10px] text-gray-400 font-black uppercase tracking-wider truncate max-w-[250px]" title={t.vendor_raw}>
+                          Raw: {t.vendor_raw}
+                        </span>
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-5">
