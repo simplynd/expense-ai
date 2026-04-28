@@ -90,7 +90,10 @@ export default function Statements() {
   };
 
   // 4. Handle Inline Filename Update
-  const handleSaveEdit = async (id) => {
+  const handleSaveEdit = async (e, id) => {
+    // Prevent the row click event from firing when we click the save button
+    if (e) e.stopPropagation(); 
+    
     if (!editValue.trim()) return;
     
     try {

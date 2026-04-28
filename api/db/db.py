@@ -554,6 +554,27 @@ def apply_normalization_to_transactions(transaction_ids: List[int], normalized_v
     for row in rows:
         add_vendor_mapping(row["vendor_raw"], normalized_vendor, category_id)
 
+
+def get_historical_vendor_mappings() -> list:
+    """
+    Fetches all previously normalized and categorized vendors to act as a source of truth.
+    """
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    # Group by vendor_raw so we get a unique dictionary of raw -> clean mappings
+    cur.execute("""
+        SELECT vendor_raw, vendor_normalized, category_id
+        FROM transactions
+        WHERE vendor_normalized IS NOT NULL 
+          AND vendor_normalized != ''
+          AND category_id IS NOT NULL
+        GROUP BY vendor_raw
+    """)
+    rows = cur.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
 # =========================
 # MCP Operations
 # =========================
