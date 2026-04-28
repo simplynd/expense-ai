@@ -26,13 +26,24 @@ export default function Categorization() {
         setSelectedIds([]);
     }, [searchTerm]);
 
+    // Smarter auto-fill logic
     useEffect(() => {
-        if (selectedIds.length > 0) {
-            const firstTx = transactions.find(t => t.id === selectedIds[0]);
-            if (firstTx) {
-                setCleanVendorName(firstTx.vendor_normalized || firstTx.vendor_raw || "");
-                setSelectedCategoryName(firstTx.category || "");
+        if (selectedIds.length === 1) {
+            const tx = transactions.find(t => t.id === selectedIds[0]);
+            if (tx) {
+                setCleanVendorName(tx.vendor_normalized || tx.vendor_raw || "");
+                setSelectedCategoryName(tx.category || "");
             }
+        } else if (selectedIds.length > 1) {
+            const selectedTxs = transactions.filter(t => selectedIds.includes(t.id));
+            const firstVendor = selectedTxs[0].vendor_normalized || selectedTxs[0].vendor_raw;
+            const allSameVendor = selectedTxs.every(t => (t.vendor_normalized || t.vendor_raw) === firstVendor);
+            
+            setCleanVendorName(allSameVendor ? firstVendor : "");
+
+            const firstCat = selectedTxs[0].category;
+            const allSameCat = selectedTxs.every(t => t.category === firstCat);
+            setSelectedCategoryName(allSameCat ? (firstCat || "") : "");
         } else {
             setCleanVendorName("");
             setSelectedCategoryName("");
@@ -100,11 +111,42 @@ export default function Categorization() {
         }
     };
 
+    // NEW: Handle renaming an existing category
+    const handleRenameCategory = async (id, newName) => {
+        try {
+            await transactionService.updateCategory(id, { name: newName });
+            setCategories(prev => prev.map(c => c.id === id ? { ...c, name: newName } : c));
+            // Re-fetch transactions to update the UI table with the new category name instantly
+            if (selectedStatementId) {
+                const data = await statementService.getStatementTransactions(selectedStatementId);
+                setTransactions(data || []);
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Failed to rename category.");
+        }
+    };
+
+    // NEW: Handle safely deleting a category
+    const handleDeleteCategory = async (id) => {
+        if (!window.confirm("Are you sure you want to permanently delete this category?")) return;
+        try {
+            await transactionService.deleteCategory(id);
+            setCategories(prev => prev.filter(c => c.id !== id));
+            if (selectedCategoryName === categories.find(c => c.id === id)?.name) {
+                setSelectedCategoryName("");
+            }
+        } catch (err) {
+            // Display the 400 Bad Request error from the backend if the category is in use
+            alert(err.response?.data?.detail || "Failed to delete category.");
+        }
+    };
+
     const handleApplyChanges = async () => {
         if (selectedIds.length === 0) return;
         
-        if (!cleanVendorName || !selectedCategoryName) {
-            alert("Please provide both a Clean Vendor Name and select a Category before applying.");
+        if (!selectedCategoryName) {
+            alert("Please select a Category before applying.");
             return;
         }
 
@@ -114,44 +156,53 @@ export default function Categorization() {
             if (!catId) {
                 const newCat = await transactionService.createCategory(selectedCategoryName);
                 catId = newCat.id;
+                // Add the dynamically created category to our local state so it appears in the sidebar instantly
+                setCategories(prev => [...prev, newCat].sort((a, b) => a.name.localeCompare(b.name)));
             }
 
-            await transactionService.batchNormalize({
-                transaction_ids: selectedIds,
-                normalized_vendor: cleanVendorName,
-                category_id: catId
-            });
+            if (cleanVendorName.trim() !== "") {
+                await transactionService.batchNormalize({
+                    transaction_ids: selectedIds,
+                    normalized_vendor: cleanVendorName,
+                    category_id: catId
+                });
 
-            setTransactions(prev => prev.map(t => 
-                selectedIds.includes(t.id) 
-                ? { ...t, category: selectedCategoryName, vendor_normalized: cleanVendorName } 
-                : t
-            ));
+                setTransactions(prev => prev.map(t => 
+                    selectedIds.includes(t.id) 
+                    ? { ...t, category: selectedCategoryName, vendor_normalized: cleanVendorName } 
+                    : t
+                ));
+            } else {
+                await transactionService.assignCategory({
+                    transaction_ids: selectedIds,
+                    category_name: selectedCategoryName
+                });
+
+                setTransactions(prev => prev.map(t => 
+                    selectedIds.includes(t.id) 
+                    ? { ...t, category: selectedCategoryName } 
+                    : t
+                ));
+            }
 
             setSelectedIds([]);
             setCleanVendorName("");
             setSelectedCategoryName("");
         } catch (err) { 
             console.error(err);
-            alert("Error assigning category and normalizing vendor."); 
+            alert("Error applying changes."); 
         }
     };
 
-    // NEW: Bulk Delete Handler
     const handleDeleteSelected = async () => {
         if (selectedIds.length === 0) return;
         if (!window.confirm(`Are you sure you want to permanently delete ${selectedIds.length} transaction(s)?`)) return;
 
         try {
-            // Delete sequentially to avoid overwhelming SQLite
             for (const id of selectedIds) {
                 await transactionService.deleteTransaction(id);
             }
-            
-            // Instantly remove them from the UI table
             setTransactions(prev => prev.filter(t => !selectedIds.includes(t.id)));
-            
-            // Reset form
             setSelectedIds([]);
             setCleanVendorName("");
             setSelectedCategoryName("");
@@ -219,7 +270,9 @@ export default function Categorization() {
                         setSelectedCategoryName={setSelectedCategoryName} 
                         onCreateCategory={handleCreateCategory}           
                         onApply={handleApplyChanges}   
-                        onDelete={handleDeleteSelected} // NEW prop
+                        onDelete={handleDeleteSelected}
+                        onRenameCategory={handleRenameCategory} // NEW PROP
+                        onDeleteCategory={handleDeleteCategory} // NEW PROP
                     />
                 </div>
                 <div className="lg:col-span-9">

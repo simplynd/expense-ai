@@ -16,9 +16,19 @@ SCHEMA_PATH = DATA_DIR / "schema.sql"
 # =========================
 
 def get_connection() -> sqlite3.Connection:
+    # 1. Keep your existing directory creation
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    
+    # 2. Add high-concurrency settings to the connection
+    conn = sqlite3.connect(DB_PATH, timeout=30.0, check_same_thread=False)
+    
+    # 3. Keep your existing row factory
     conn.row_factory = sqlite3.Row
+    
+    # 4. Enable Write-Ahead Logging (WAL) to prevent locks
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA synchronous=NORMAL;")
+    
     return conn
 
 
@@ -148,6 +158,12 @@ def delete_statement(statement_id: int):
     # Delete the parent statement
     cur.execute("DELETE FROM statements WHERE id = ?", (statement_id,))
 
+    conn.commit()
+    conn.close()
+
+def update_statement_filename(statement_id: int, new_name: str):
+    conn = get_connection()
+    conn.execute("UPDATE statements SET filename = ? WHERE id = ?", (new_name, statement_id))
     conn.commit()
     conn.close()
 
@@ -443,6 +459,27 @@ def get_categories() -> List[Dict[str, Any]]:
     ).fetchall()
     conn.close()
     return [dict(row) for row in rows]
+
+def update_category_name(category_id: int, new_name: str):
+    conn = get_connection()
+    conn.execute("UPDATE categories SET name = ? WHERE id = ?", (new_name, category_id))
+    conn.commit()
+    conn.close()
+
+def delete_category(category_id: int):
+    conn = get_connection()
+    cur = conn.cursor()
+    # Security Check: Prevent deleting if any transactions are using this category
+    cur.execute("SELECT COUNT(*) FROM transactions WHERE category_id = ?", (category_id,))
+    count = cur.fetchone()[0]
+    
+    if count > 0:
+        conn.close()
+        raise ValueError(f"This category is currently being used by {count} transaction(s). Please re-categorize them before deleting.")
+        
+    cur.execute("DELETE FROM categories WHERE id = ?", (category_id,))
+    conn.commit()
+    conn.close()
 
 # =========================
 # Vendor Mapping Operations

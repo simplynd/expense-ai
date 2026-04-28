@@ -13,7 +13,9 @@ from db.db import (
     is_manual_transaction,
     get_transaction_by_id,
     get_unnormalized_transactions,
-    apply_normalization_to_transactions
+    apply_normalization_to_transactions,
+    update_category_name,
+    delete_category
 )
 
 router = APIRouter()
@@ -30,6 +32,9 @@ class CategoryOut(BaseModel):
     id: int
     name: str
     parent_id: Optional[int] = None
+
+class CategoryUpdate(BaseModel):
+    name: str
 
 class TransactionOut(BaseModel):
     id: int
@@ -109,6 +114,21 @@ def list_categories():
 def create_category(name: str, parent_id: Optional[int] = None):
     category_id = get_or_create_category(name, parent_id)
     return CategoryOut(id=category_id, name=name, parent_id=parent_id)
+
+@router.put("/categories/{category_id}")
+def update_category_endpoint(category_id: int, payload: CategoryUpdate):
+    """Rename a category."""
+    update_category_name(category_id, payload.name)
+    return {"message": "Category renamed successfully"}
+
+@router.delete("/categories/{category_id}", status_code=204)
+def delete_category_endpoint(category_id: int):
+    """Delete a category safely."""
+    try:
+        delete_category(category_id)
+    except ValueError as e:
+        # If it's in use, throw a 400 Bad Request to alert the frontend
+        raise HTTPException(status_code=400, detail=str(e))
 
 # =========================
 # Manual Transaction Endpoints

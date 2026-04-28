@@ -96,9 +96,24 @@ export const transactionService = {
     return response.data;
   },
 
+  // NEW: Categorize only (without normalizing the vendor name)
+  assignCategory: async (payload) => {
+    const response = await apiClient.post('/transactions/assign-category', payload);
+    return response.data;
+  },
+
   // NEW: Batch normalize and categorize
   batchNormalize: async (payload) => {
     const response = await apiClient.post('/transactions/review/normalize', payload);
+    return response.data;
+  },
+
+  updateCategory: async (id, payload) => {
+    const response = await apiClient.put(`/transactions/categories/${id}`, payload);
+    return response.data;
+  },
+  deleteCategory: async (id) => {
+    const response = await apiClient.delete(`/transactions/categories/${id}`);
     return response.data;
   },
   

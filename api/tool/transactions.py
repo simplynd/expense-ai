@@ -161,36 +161,42 @@ def parse_text_to_transactions(text: str, statement_id: int) -> List[Dict]:
         except Exception as e:
             logger.error(f"Skipped parsing line due to error: {line} | Error: {e}")
             continue 
-            
-    conn = get_connection()
-    cur = conn.cursor()
 
+    # FIX 1: Resolve all categories BEFORE opening the bulk insert connection.
+    # This prevents SQLite from deadlocking by trying to open two write connections at once.
     for txn in transactions:
-        # Resolve category ID if the LLM provided a category string
         cat_name = txn.get("category")
-        cat_id = None
         if cat_name and cat_name.lower() != "null":
-            cat_id = get_or_create_category(cat_name)
-
-        cur.execute(
-            """
-            INSERT INTO transactions (statement_id, transaction_date, vendor_raw, vendor_normalized, amount, category_id)
-            VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            (
-                statement_id, 
-                txn.get("date"), 
-                txn.get("vendor_raw"), 
-                txn.get("vendor_normalized"), 
-                txn.get("amount"), 
-                cat_id
+            txn["category_id"] = get_or_create_category(cat_name)
+        else:
+            txn["category_id"] = None
+            
+    # FIX 2: Use a single connection and ensure it closes perfectly using try/finally
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        for txn in transactions:
+            cur.execute(
+                """
+                INSERT INTO transactions (statement_id, transaction_date, vendor_raw, vendor_normalized, amount, category_id)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    statement_id, 
+                    txn.get("date"), 
+                    txn.get("vendor_raw"), 
+                    txn.get("vendor_normalized"), 
+                    txn.get("amount"), 
+                    txn.get("category_id")
+                )
             )
-        )
-
-    conn.commit()
-    conn.close()
+        conn.commit()
+    finally:
+        # This guarantees the lock is released, allowing update_statement_status to run
+        conn.close()
 
     return transactions
+
 
 def _clean_llm_output(text: str) -> str: 
     text = text.replace("```json", "").replace("```", "").strip()

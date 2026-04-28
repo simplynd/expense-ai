@@ -35,6 +35,37 @@ export default function AdjunctOutlays() {
     } catch (err) { console.error("Failed to fetch transactions:", err); }
   };
 
+  const handleRenameBucket = async (id, newName) => {
+    try {
+      // Using your existing updateFilename method!
+      await statementService.updateFilename(id, newName);
+      // Instantly update the UI
+      setStatements(prev => prev.map(s => s.id === id ? { ...s, filename: newName } : s));
+    } catch (err) {
+      console.error(err);
+      alert("Failed to rename ledger group.");
+    }
+  };
+
+  const handleDeleteBucket = async (id) => {
+    if (!window.confirm("Are you sure you want to permanently delete this manual group and ALL of its transactions?")) return;
+    try {
+      await statementService.deleteStatement(id);
+      
+      // Remove it from the list
+      setStatements(prev => prev.filter(s => s.id !== id));
+      
+      // If the user was viewing the deleted bucket, clear the view
+      if (selectedStatement?.id === id) {
+        setSelectedStatement(null);
+        setTransactions([]);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete ledger group.");
+    }
+  };
+
   const handleCreate = async () => {
     if (!newName.trim()) return;
     try {
@@ -187,7 +218,7 @@ export default function AdjunctOutlays() {
       <StatementSelector
         statements={statements} selectedId={selectedStatement?.id} onSelect={handleSelect}
         onToggleCreate={() => setIsCreating(!isCreating)} isCreating={isCreating}
-        newName={newName} setNewName={setNewName} onCreate={handleCreate}
+        newName={newName} setNewName={setNewName} onCreate={handleCreate} onRename={handleRenameBucket} onDelete={handleDeleteBucket}
       />
       {selectedStatement && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
