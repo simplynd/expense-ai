@@ -15,7 +15,8 @@ from db.db import (
     get_unnormalized_transactions,
     apply_normalization_to_transactions,
     update_category_name,
-    delete_category
+    delete_category,
+    get_all_transactions
 )
 
 router = APIRouter()
@@ -189,3 +190,9 @@ def delete_transaction_endpoint(transaction_id: int):
     """
     # Simply call the delete function without the manual source_type check
     delete_transaction(transaction_id)
+
+@router.get("/all", response_model=List[TransactionOut])
+def list_all_transactions_endpoint():
+    """Returns every transaction in the database."""
+    transactions = get_all_transactions()
+    return [TransactionOut(**tx) for tx in transactions]

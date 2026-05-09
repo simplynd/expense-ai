@@ -5,12 +5,17 @@ import {
   Lightbulb,
   MessageSquare,
   DollarSign,
-  PlusCircle
+  PlusCircle,
+  Database,
+  LineChart // <-- Added icon for Multi-Year Dashboard
 } from 'lucide-react';
+
 import Dashboard from './pages/Dashboard';
 import Statements from './pages/Statements';
 import Categorization from './pages/Categorization';
 import AdjunctOutlays from './pages/AdjunctOutlays';
+import MasterLedger from './pages/MasterLedger';
+import MultiYearDashboard from './pages/MultiYearDashboard'; // <-- Imported new page
 import Insights from './pages/Insights';
 
 function App() {
@@ -30,8 +35,12 @@ function App() {
         return <Statements />;
       case 'categorization':
         return <Categorization />;
-      case 'adjunct': // 2. ADD THE NEW CASE
+      case 'adjunct':
         return <AdjunctOutlays />;
+      case 'master-ledger':
+        return <MasterLedger />;
+      case 'multi-year': // <-- Added new route
+        return <MultiYearDashboard />;
       case 'insights':
         return <Insights
           messages={chatMessages}
@@ -56,7 +65,7 @@ function App() {
           <span className="text-xl font-bold tracking-tight">Expense Tracker</span>
         </div>
 
-        <nav className="flex-1 px-4 py-2 space-y-2">
+        <nav className="flex-1 px-4 py-2 space-y-2 overflow-y-auto">
           <button
             onClick={() => setActivePage('dashboard')}
             className={`w-full p-3.5 rounded-xl flex items-center gap-3 transition-all duration-200 ${activePage === 'dashboard'
@@ -65,8 +74,22 @@ function App() {
               }`}
           >
             <LayoutDashboard size={20} />
-            <span className="font-medium">Dashboard</span>
+            <span className="font-medium">Single Year</span>
           </button>
+
+          {/* NEW: Multi-Year Dashboard Navigation Button */}
+          <button
+            onClick={() => setActivePage('multi-year')}
+            className={`w-full p-3.5 rounded-xl flex items-center gap-3 transition-all duration-200 ${activePage === 'multi-year'
+              ? 'bg-indigo-500 text-white shadow-lg'
+              : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
+          >
+            <LineChart size={20} />
+            <span className="font-medium">Multi-Year</span>
+          </button>
+
+          <div className="my-4 border-t border-gray-700/50 mx-2"></div>
 
           <button
             onClick={() => setActivePage('statements')}
@@ -102,6 +125,19 @@ function App() {
           </button>
 
           <button
+            onClick={() => setActivePage('master-ledger')}
+            className={`w-full p-3.5 rounded-xl flex items-center gap-3 transition-all duration-200 ${activePage === 'master-ledger'
+              ? 'bg-indigo-600 text-white shadow-lg'
+              : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
+          >
+            <Database size={20} />
+            <span className="font-medium">Master Ledger</span>
+          </button>
+
+          <div className="my-4 border-t border-gray-700/50 mx-2"></div>
+
+          <button
             onClick={() => setActivePage('insights')}
             className={`w-full p-3.5 rounded-xl flex items-center gap-3 transition-all duration-200 ${activePage === 'insights'
               ? 'bg-blue-600 text-white shadow-lg'
@@ -119,15 +155,21 @@ function App() {
         <div className="pt-6 px-8 mb-2">
           <header className="bg-white h-20 rounded-2xl shadow-sm border border-gray-100 flex items-center px-8">
             <div className="flex items-center gap-4">
-              <div className="w-11 h-11 rounded-xl bg-linear-to-br from-blue-600 to-teal-400 flex items-center justify-center shadow-md shadow-blue-100">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-teal-400 flex items-center justify-center shadow-md shadow-blue-100">
                 <DollarSign className="text-white" size={24} />
               </div>
               <div>
                 <h1 className="text-xl font-extrabold text-gray-800 leading-none">
-                  {activePage === 'adjunct' ? 'Adjunct Outlays' : activePage.charAt(0).toUpperCase() + activePage.slice(1)}
+                  {activePage === 'adjunct' ? 'Adjunct Outlays' : 
+                   activePage === 'master-ledger' ? 'Master Ledger' : 
+                   activePage === 'multi-year' ? 'Multi-Year Dashboard' :
+                   activePage.charAt(0).toUpperCase() + activePage.slice(1)}
                 </h1>
                 <p className="text-[11px] font-bold text-blue-500 uppercase tracking-[0.15em] mt-1">
-                  {activePage === 'adjunct' ? 'Manual Ledger' : 'Analytics Dashboard'}
+                  {activePage === 'adjunct' ? 'Manual Ledger' : 
+                   activePage === 'master-ledger' ? 'Historical Records' : 
+                   activePage === 'multi-year' ? 'YoY Trends & Analytics' :
+                   'Analytics Dashboard'}
                 </p>
               </div>
             </div>

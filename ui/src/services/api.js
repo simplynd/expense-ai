@@ -59,6 +59,13 @@ export const statementService = {
 
 // --- ADDED THIS SECTION ---
 export const transactionService = {
+
+  // Get all transactions across all statements
+  getAllTransactions: async () => {
+    const response = await apiClient.get('/transactions/all');
+    return response.data;
+  },
+
   // Get all available categories
   getCategories: async () => {
     const response = await apiClient.get('/transactions/categories');

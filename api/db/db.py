@@ -172,6 +172,32 @@ def update_statement_filename(statement_id: int, new_name: str):
 # Transaction Operations
 # =========================
 
+def get_all_transactions() -> list:
+    """
+    Fetches all transactions across all statements for the master ledger.
+    """
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    
+    cur.execute("""
+        SELECT 
+            t.id, 
+            t.statement_id, 
+            t.transaction_date, 
+            t.vendor_raw, 
+            t.vendor_normalized, 
+            t.amount, 
+            c.name as category
+        FROM transactions t
+        LEFT JOIN categories c ON t.category_id = c.id
+        ORDER BY t.transaction_date DESC
+    """)
+    
+    rows = cur.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
 def insert_transactions(
     statement_id: int,
     transactions: List[Dict[str, Any]],
