@@ -213,12 +213,31 @@ export default function AdjunctOutlays() {
     } catch (err) { alert("Update failed."); }
   };
 
+  const handleBulkClone = async (itemsToClone) => {
+    try {
+      // Create an array of Promises to create them all concurrently
+      const clonePromises = itemsToClone.map(item => 
+        statementService.createManualStatement(item.newName)
+      );
+      
+      // Wait for the backend to finish and collect the newly created statement objects
+      const newStatements = await Promise.all(clonePromises);
+      
+      // Instantly update the UI by appending the new statements to your existing state
+      setStatements(prev => [...prev, ...newStatements]);
+      
+    } catch (err) {
+      console.error(err);
+      alert("An error occurred while cloning ledger groups.");
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       <StatementSelector
         statements={statements} selectedId={selectedStatement?.id} onSelect={handleSelect}
         onToggleCreate={() => setIsCreating(!isCreating)} isCreating={isCreating}
-        newName={newName} setNewName={setNewName} onCreate={handleCreate} onRename={handleRenameBucket} onDelete={handleDeleteBucket}
+        newName={newName} setNewName={setNewName} onCreate={handleCreate} onRename={handleRenameBucket} onDelete={handleDeleteBucket} onClone={handleBulkClone}
       />
       {selectedStatement && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
