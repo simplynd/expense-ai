@@ -82,3 +82,16 @@ CREATE TABLE IF NOT EXISTS vendor_mapping (
 
 CREATE INDEX IF NOT EXISTS idx_vendor_mapping_raw
 ON vendor_mapping(raw_vendor);
+
+-- =========================
+-- Income Records (NOA & Savings)
+-- =========================
+CREATE TABLE IF NOT EXISTS income_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    year TEXT NOT NULL,
+    person_name TEXT NOT NULL,
+    gross_income REAL DEFAULT 0,
+    net_income REAL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(year, person_name)
+);

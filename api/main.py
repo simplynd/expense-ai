@@ -9,6 +9,7 @@ from tool.logging_config import logger
 from handler.statement import router as statements_router
 from handler.transaction import router as transactions_router
 from handler.dashboard import router as dashboard_router
+from handler.income import router as income_router
 
 
 @asynccontextmanager
@@ -47,6 +48,7 @@ def create_app() -> FastAPI:
     app.include_router(statements_router, prefix="/statements", tags=["Statements"])
     app.include_router(transactions_router, prefix="/transactions", tags=["Transactions"])
     app.include_router(dashboard_router, prefix="/dashboard", tags=["Dashboard"])
+    app.include_router(income_router, prefix="/income", tags=["Income"])
 
     return app
 

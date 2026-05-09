@@ -169,6 +169,42 @@ def update_statement_filename(statement_id: int, new_name: str):
 
 
 # =========================
+# Income Operations
+# =========================
+
+
+def get_all_income_records() -> list:
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM income_records ORDER BY year DESC")
+    rows = cur.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def save_yearly_income(year: str, records: list):
+    conn = get_connection()
+    cur = conn.cursor()
+    # Wipe the existing records for this year and insert the fresh list
+    cur.execute("DELETE FROM income_records WHERE year = ?", (year,))
+    for r in records:
+        cur.execute("""
+            INSERT INTO income_records (year, person_name, gross_income, net_income)
+            VALUES (?, ?, ?, ?)
+        """, (year, r['person_name'], r['gross_income'], r['net_income']))
+    conn.commit()
+    conn.close()
+
+def delete_yearly_income(year: str):
+    """Deletes all income records for a specific year."""
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM income_records WHERE year = ?", (year,))
+    conn.commit()
+    conn.close()
+
+
+# =========================
 # Transaction Operations
 # =========================
 

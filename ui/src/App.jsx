@@ -7,7 +7,8 @@ import {
   DollarSign,
   PlusCircle,
   Database,
-  LineChart // <-- Added icon for Multi-Year Dashboard
+  LineChart,
+  PiggyBank // <-- 1. Added icon for Savings Ledger
 } from 'lucide-react';
 
 import Dashboard from './pages/Dashboard';
@@ -15,7 +16,8 @@ import Statements from './pages/Statements';
 import Categorization from './pages/Categorization';
 import AdjunctOutlays from './pages/AdjunctOutlays';
 import MasterLedger from './pages/MasterLedger';
-import MultiYearDashboard from './pages/MultiYearDashboard'; // <-- Imported new page
+import MultiYearDashboard from './pages/MultiYearDashboard';
+import SavingsLedger from './pages/SavingsLedger'; // <-- 2. Imported new page
 import Insights from './pages/Insights';
 
 function App() {
@@ -39,8 +41,10 @@ function App() {
         return <AdjunctOutlays />;
       case 'master-ledger':
         return <MasterLedger />;
-      case 'multi-year': // <-- Added new route
+      case 'multi-year':
         return <MultiYearDashboard />;
+      case 'savings': // <-- 3. Added new route
+        return <SavingsLedger />;
       case 'insights':
         return <Insights
           messages={chatMessages}
@@ -56,8 +60,8 @@ function App() {
   return (
     <div className="flex h-screen w-full bg-brand-bg font-sans text-gray-900">
 
-      {/* 1. LEFT SIDEBAR */}
-      <aside className="w-64 bg-linear-to-b from-sidebar-start to-sidebar-end text-white flex flex-col shadow-2xl">
+      {/* LEFT SIDEBAR */}
+      <aside className="w-64 bg-gradient-to-b from-sidebar-start to-sidebar-end text-white flex flex-col shadow-2xl">
         <div className="p-8 flex items-center gap-3">
           <div className="w-9 h-9 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
             <span className="font-bold text-white text-lg">E</span>
@@ -77,7 +81,6 @@ function App() {
             <span className="font-medium">Single Year</span>
           </button>
 
-          {/* NEW: Multi-Year Dashboard Navigation Button */}
           <button
             onClick={() => setActivePage('multi-year')}
             className={`w-full p-3.5 rounded-xl flex items-center gap-3 transition-all duration-200 ${activePage === 'multi-year'
@@ -135,6 +138,18 @@ function App() {
             <span className="font-medium">Master Ledger</span>
           </button>
 
+          {/* 4. NEW: Savings Ledger Navigation Button */}
+          <button
+            onClick={() => setActivePage('savings')}
+            className={`w-full p-3.5 rounded-xl flex items-center gap-3 transition-all duration-200 ${activePage === 'savings'
+              ? 'bg-teal-600 text-white shadow-lg'
+              : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
+          >
+            <PiggyBank size={20} />
+            <span className="font-medium">Savings / NOA</span>
+          </button>
+
           <div className="my-4 border-t border-gray-700/50 mx-2"></div>
 
           <button
@@ -150,7 +165,7 @@ function App() {
         </nav>
       </aside>
 
-      {/* 2. MAIN CONTENT AREA */}
+      {/* MAIN CONTENT AREA */}
       <main className="flex-1 flex flex-col overflow-hidden">
         <div className="pt-6 px-8 mb-2">
           <header className="bg-white h-20 rounded-2xl shadow-sm border border-gray-100 flex items-center px-8">
@@ -160,15 +175,19 @@ function App() {
               </div>
               <div>
                 <h1 className="text-xl font-extrabold text-gray-800 leading-none">
+                  {/* 5. Updated Header Titles */}
                   {activePage === 'adjunct' ? 'Adjunct Outlays' : 
                    activePage === 'master-ledger' ? 'Master Ledger' : 
                    activePage === 'multi-year' ? 'Multi-Year Dashboard' :
+                   activePage === 'savings' ? 'Savings & Income' :
                    activePage.charAt(0).toUpperCase() + activePage.slice(1)}
                 </h1>
                 <p className="text-[11px] font-bold text-blue-500 uppercase tracking-[0.15em] mt-1">
+                  {/* 5. Updated Header Subtitles */}
                   {activePage === 'adjunct' ? 'Manual Ledger' : 
                    activePage === 'master-ledger' ? 'Historical Records' : 
                    activePage === 'multi-year' ? 'YoY Trends & Analytics' :
+                   activePage === 'savings' ? 'NOA & Net Savings Tracker' :
                    'Analytics Dashboard'}
                 </p>
               </div>

@@ -7,6 +7,8 @@ const apiClient = axios.create({
   },
 });
 
+
+// Dashboard Service API calls
 export const dashboardService = {
   getSummary: async (year = 2025) => {
     const response = await apiClient.get(`/dashboard/summary?year=${year}`);
@@ -20,6 +22,7 @@ export const dashboardService = {
   }
 };
 
+// Statement Service API calls
 export const statementService = {
   listStatements: () => apiClient.get('/statements/'),
   
@@ -57,7 +60,7 @@ export const statementService = {
 
 };
 
-// --- ADDED THIS SECTION ---
+// Transaction Service API calls
 export const transactionService = {
 
   // Get all transactions across all statements
@@ -125,6 +128,22 @@ export const transactionService = {
   },
   
 };
-// ---------------------------
+
+// Income Service API calls
+export const incomeService = {
+  getAll: async () => {
+    const response = await apiClient.get('/income/');
+    return response.data;
+  },
+  save: async (data) => {
+    // data should be: { year, gross_income, net_income, notes }
+    const response = await apiClient.post('/income/', data);
+    return response.data;
+  },
+  delete: async (year) => {
+    const response = await apiClient.delete(`/income/${year}`);
+    return response.data;
+  }
+};
 
 export default apiClient;
