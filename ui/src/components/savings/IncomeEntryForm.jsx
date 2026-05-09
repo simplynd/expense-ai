@@ -4,8 +4,8 @@ import { Save, Plus, Trash2, Calculator, X } from 'lucide-react';
 export default function IncomeEntryForm({ onSave, isLoading, annualExpenses, initialEditData, onCancelEdit }) {
   const [year, setYear] = useState(new Date().getFullYear().toString());
   const [incomes, setIncomes] = useState([
-    { person_name: 'Nakul', gross_income: '', net_income: '' },
-    { person_name: 'Dhara', gross_income: '', net_income: '' }
+    { person_name: 'User', gross_income: '', net_income: '' },
+    { person_name: 'User 2', gross_income: '', net_income: '' }
   ]);
 
   // If we receive edit data, populate the form
@@ -17,8 +17,8 @@ export default function IncomeEntryForm({ onSave, isLoading, annualExpenses, ini
       // Reset form
       setYear(new Date().getFullYear().toString());
       setIncomes([
-        { person_name: 'Nakul', gross_income: '', net_income: '' },
-        { person_name: 'Dhara', gross_income: '', net_income: '' }
+        { person_name: 'User', gross_income: '', net_income: '' },
+        { person_name: 'User 2', gross_income: '', net_income: '' }
       ]);
     }
   }, [initialEditData]);

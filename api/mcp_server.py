@@ -12,22 +12,22 @@ mcp = FastMCP("Expense-AI-Analyst")
 @mcp.tool()
 def fetch_all_transactions_for_year(year: int) -> str:
     """
-    Use this for broad, high-level questions about a specific year. 
-    Ideal for: 'Total spend in 2024', 'What was my biggest category last year?', or 'Summary of 2025'.
+    Fetches all transactions for a specific year. 
+    SCHEMA: transaction_date (YYYY-MM-DD), vendor_normalized, amount, category_name.
+    Use this for high-level questions like 'What was my biggest category in 2024?'.
     """
     data = get_yearly_transactions(year)
     if not data:
         return f"No transaction data found for the year {year}."
     
-    # We convert to a clean string format to save tokens
     output = [f"{t['transaction_date']} | {t['vendor']} | ${t['amount']} | {t['category'] or 'Uncategorized'}" for t in data]
     return "\n".join(output)
 
 @mcp.tool()
 def search_spending(query_term: str) -> str:
     """
-    Use this for targeted searches regarding specific names, shops, or types of spending.
-    Ideal for: 'How much did I spend at Amazon?', 'Show me all Grocery bills', or 'Find transactions for Starbucks'.
+    Search transactions by vendor name or category.
+    Use this for: 'How much at Amazon?', 'Show me Starbucks visits', or 'Groceries'.
     """
     data = search_transactions(query_term)
     if not data:
@@ -39,9 +39,9 @@ def search_spending(query_term: str) -> str:
 @mcp.tool()
 def get_net_spending_summary(year: int) -> str:
     """
-    Use this tool ONLY when the user asks for 'total spending', 'net spend', 
-    or a summary of a specific year. 
-    This tool is 100% accurate as it performs math at the database level.
+    REQUIRED for 'total spend', 'net spending', or 'annual summary'.
+    This performs a SUM(amount) in SQLite and handles refunds (negative amounts) correctly.
+    It returns: net_total (sum), transaction_count, and year.
     """
     result = get_net_spending_aggregation(year)
     
@@ -49,9 +49,9 @@ def get_net_spending_summary(year: int) -> str:
         return f"No spending data found for the year {year}."
     
     return (
-        f"Calculated Net Spending for {year}: ${result['net_total']}. "
-        f"This was calculated across {result['transaction_count']} individual transactions, "
-        f"automatically excluding internal payments and accounting for refunds."
+        f"Calculated Net Spending for {year}: ${result['net_total']:.2f}. "
+        f"Records: {result['transaction_count']}. "
+        f"Internal transfers were automatically excluded."
     )
 
 # --- The "Magic" Bridge ---

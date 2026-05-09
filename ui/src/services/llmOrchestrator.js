@@ -1,60 +1,43 @@
 import { mcpClient } from './mcpClient';
 
 const OLLAMA_URL = "http://127.0.0.1:11434/api/chat";
-const MODEL = "llama3.1:8b";
+const MODEL = "qwen2.5-coder:14b"; // Make sure you are using this one!
 
-const SYSTEM_PROMPT = `You are a Senior Financial Analyst. You have access to a user's transaction database through MCP tools.
+const SYSTEM_PROMPT = `You are a Senior Financial Analyst. 
 
-### CONVERSATIONAL RULES:
-- If the user greets you (e.g., "Hi", "Hello") or asks a general question that doesn't require data (e.g., "How are you?"), respond naturally WITHOUT calling any tools.
-- ONLY use tools when the user's request requires data from the database (spending, transactions, totals).
+### KNOWLEDGE BASE:
+- DATABASE: SQLite. Primary table is 'transactions'.
+- KEY FIELDS: 'vendor_normalized' (clean name), 'amount' (CAD), 'transaction_date' (YYYY-MM-DD).
 
-### DOMAIN KNOWLEDGE:
-- NET SPENDING: In this database, 'Net Spending' is (Sum of Debits) - (Sum of Refunds).
-- PAYMENTS/TRANSFERS: Transactions with keywords like "PAYMENT", "TRANSFER", or "CREDIT CARD" are internal movements. They represent paying off a debt, not a new expense.
-- REFUNDS: Negative amounts (e.g., -$50.00) are refunds or credits and should reduce the total spending.
+### OPERATIONAL RULES:
+1. NARRATIVE DISCIPLINE: Be highly concise and technical. Avoid conversational fluff.
+2. TOOL PRIORITY: Always use 'get_net_spending_summary' for totals. Do not calculate totals manually if a tool is available.
+3. INTERNAL TRANSFERS: Exclude transactions like "CC PAYMENT" or "TRANSFER" from expense analysis as they are debt movements.
+4. NO RAW JSON: Never show the user raw JSON. If you call a tool, wait for the data, then summarize it in plain text.
 
-### TOOL SELECTION STRATEGY:
-- ACCURACY FIRST: If the user asks for a total, net spend, or summary, the 'get_net_spending_summary' tool is the most accurate as it performs math at the database level.
-- DETAILS SECOND: If the user asks for a list, a breakdown, or to see "why" a number is what it is, use 'fetch_all_transactions_for_year' or 'search_spending'.
-- HYBRID: You may call 'get_net_spending_summary' to get the "Truth" and then 'fetch_all_transactions_for_year' to provide the context/list to the user.
-
-### PRESENTATION:
-- Always be precise with numbers. 
-- Use Markdown tables for transaction lists.
-- If you notice a discrepancy, explain your reasoning (e.g., "I excluded $3,600 in payments to show actual spending").`;
-
-// ... rest of your orchestrator logic (OLLAMA_URL, MODEL, etc.)
+### RESPONSE FORMAT:
+- Use Markdown tables for data lists.`;
 
 export const llmOrchestrator = {
   async chat(userMessage, history = []) {
-    console.log("--- Starting New Orchestration ---");
-
     try {
-      // 1. Get the latest tool definitions from MCP
-      const tools = await mcpClient.getTools();
-      console.log("🛠️ Available MCP Tools:", tools.map(t => t.name));
-
-      // Map MCP tools to Ollama's expected format
-      const ollamaTools = tools.map(t => ({
-        type: "function",
-        function: {
-          name: t.name,
-          description: t.description,
-          parameters: t.inputSchema
-        }
-      }));
-
       let messages = [
         { role: "system", content: SYSTEM_PROMPT },
         ...history,
         { role: "user", content: userMessage }
       ];
 
-      // --- START AGENT LOOP ---
-      for (let i = 0; i < 5; i++) {
-        console.log(`Step ${i + 1}: Contacting Ollama...`);
+      const ollamaTools = (await mcpClient.getTools()).map(tool => ({
+        type: "function",
+        function: {
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.inputSchema
+        }
+      }));
 
+      // Loop for up to 5 tool-calling turns
+      for (let i = 0; i < 5; i++) {
         const response = await fetch(OLLAMA_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -62,63 +45,79 @@ export const llmOrchestrator = {
             model: MODEL,
             messages: messages,
             tools: ollamaTools,
-            stream: false,
-            options: {
-              temperature: 0 // Keep the model focused on math and facts
-            }
+            stream: false
           })
         });
 
-        if (!response.ok) {
-          throw new Error(`Ollama API returned ${response.status}`);
+        const data = await response.json();
+        let assistantMessage = data.message;
+        
+        let toolCalls = assistantMessage.tool_calls || [];
+        
+        // --- OLLAMA TOOL LEAK INTERCEPTOR ---
+        // Catch the JSON leak shown in your screenshot and force it into the tool pipeline
+        if (toolCalls.length === 0 && assistantMessage.content) {
+            const text = assistantMessage.content.trim();
+            // If the text looks exactly like the JSON payload from your screenshot:
+            if (text.startsWith("{") && text.endsWith("}") && text.includes('"name"') && text.includes('"arguments"')) {
+                try {
+                    const parsed = JSON.parse(text);
+                    if (parsed.name && parsed.arguments) {
+                        console.log("🔧 Intercepted leaked tool call:", parsed.name);
+                        
+                        toolCalls = [{
+                            id: "call_" + Date.now(),
+                            type: "function",
+                            function: {
+                                name: parsed.name,
+                                arguments: parsed.arguments
+                            }
+                        }];
+                        // Reconstruct the message object so the UI doesn't print the JSON
+                        assistantMessage.tool_calls = toolCalls;
+                        assistantMessage.content = ""; 
+                    }
+                } catch (e) {
+                    // Not valid JSON, just let it pass to the UI as regular text
+                }
+            }
         }
 
-        const data = await response.json();
-        const assistantMessage = data.message;
         messages.push(assistantMessage);
 
-        // Check if the AI wants to use a tool
-        if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
-          console.warn("⚠️ AI IS CALLING A TOOL:", assistantMessage.tool_calls.map(c => c.function.name));
-
-          for (const call of assistantMessage.tool_calls) {
+        // Execute the tool call
+        if (toolCalls.length > 0) {
+          for (const call of toolCalls) {
             try {
-              // Validate that the tool name exists before calling
-              const toolExists = ollamaTools.some(t => t.function.name === call.function.name);
-              if (!toolExists) {
-                console.error(`❌ AI tried to call non-existent tool: ${call.function.name}`);
-                continue;
-              }
-
               const result = await mcpClient.callTool(call.function.name, call.function.arguments);
-              console.log(`✅ TOOL SUCCESS: ${call.function.name}`);
-
               messages.push({
                 role: "tool",
                 content: typeof result === 'string' ? result : JSON.stringify(result),
-                tool_call_id: call.id
+                name: call.function.name // Required by some Ollama models
               });
-            } catch (toolError) {
-              console.error(`❌ TOOL CRASHED (${call.function.name}):`, toolError);
+            } catch (err) {
               messages.push({
                 role: "tool",
-                content: `Error: ${toolError.message}`,
-                tool_call_id: call.id
+                content: `Error: ${err.message}`,
+                name: call.function.name
               });
             }
           }
-          // Very important: This 'continue' sends the tool results back to the LLM 
-          // so it can generate the final natural language answer.
-          continue;
+          continue; // Loop back to Ollama so it can read the DB results and answer you!
         }
 
-        // No more tool calls? Return the final text answer
-        console.log("🏁 Finalizing response...");
+        // Final text response to display in the UI
         return {
-          content: assistantMessage.content,
+          content: assistantMessage.content || "I have processed the data. Is there anything else you'd like to know?",
           history: messages
         };
       }
+      
+      return {
+          content: "I have gathered the data but reached my maximum reasoning steps. Please refine your query.",
+          history: messages
+      };
+
     } catch (error) {
       console.error("🚨 Orchestrator Error:", error);
       throw error;
